@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>⚡ Consumo Energético</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+:root{--bg:#07090f;--s1:#0e1118;--s2:#141820;--s3:#1a2030;--b:#222a3d;--y:#f5c518;--y2:#ffd740;--bl:#4da6ff;--gr:#2ecc8a;--rd:#ff5252;--pu:#c084fc;--tx:#e2e8f5;--mu:#5b6b8a;--f:'Space Grotesk',sans-serif;--m:'JetBrains Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--f);min-height:100vh}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(14,17,24,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;background:var(--y);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.brand-name{font-family:var(--m);font-size:13px;font-weight:700;letter-spacing:.05em}
+.brand-name span{color:var(--y)}
+.tabs{display:flex;gap:1px;background:var(--s2);border-radius:8px;padding:3px}
+.tab{padding:5px 16px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--mu);transition:all .15s;font-family:var(--f);}
+.tab:hover:not(.on){color:var(--tx)}.tab.on{background:var(--y);color:#000}
+main{max-width:1040px;margin:0 auto;padding:22px 16px}
+.pane{display:none;animation:fadeUp .2s ease}.pane.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.step{margin-bottom:20px}
+.step-head{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.snum{width:24px;height:24px;border-radius:50%;background:var(--s3);border:1px solid var(--y);display:flex;align-items:center;justify-content:center;font-family:var(--m);font-size:9px;font-weight:700;color:var(--y);flex-shrink:0;}
+.shead h3{font-size:13px;font-weight:700}.shead p{font-size:10px;color:var(--mu);margin-top:1px}
+.card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:16px}
+.incard{background:var(--s2);border:1px solid var(--b);border-radius:9px;padding:12px}
+.uprow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:580px){.uprow{grid-template-columns:1fr}}
+.uz{border:2px dashed var(--b);border-radius:10px;padding:22px 14px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s1);position:relative;}
+.uz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz:hover,.uz.drag{border-color:var(--y);background:var(--s2)}.uz.done{border-color:var(--gr);border-style:solid}
+.uz .uicon{font-size:26px;margin-bottom:6px}.uz h4{font-size:12px;font-weight:700;margin-bottom:2px}.uz p{font-size:10px;color:var(--mu)}
+.utag{display:inline-block;margin-top:8px;background:var(--s3);border:1px solid var(--b);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;pointer-events:none;}
+.uz.done .utag{background:rgba(46,204,138,.1);border-color:var(--gr);color:var(--gr)}
+.ufname{font-family:var(--m);font-size:10px;color:var(--gr);margin-top:4px}
+#st{display:none;padding:9px 13px;border-radius:7px;margin-bottom:14px;font-size:12px;font-weight:600;align-items:center;gap:8px}
+#st.load{background:#0e1d30;border:1px solid #1e4060;color:#6aacf0;display:flex}
+#st.ok{background:#0a1e14;border:1px solid #1a4a28;color:var(--gr);display:flex}
+#st.err{background:#1a0a0a;border:1px solid #4a1010;color:var(--rd);display:flex}
+.spin{width:13px;height:13px;border:2px solid #1e4060;border-top-color:#6aacf0;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.total-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:4px}
+.total-bar h3{font-size:12px;font-weight:700;color:var(--y)}
+.total-badge{background:var(--y);border-radius:7px;padding:5px 12px}
+.total-badge input{background:transparent;border:none;outline:none;font-family:var(--m);font-weight:700;font-size:16px;color:#000;text-align:center;width:140px}
+.hint{font-size:10px;color:var(--mu);margin-bottom:12px;margin-top:3px}.hint em{color:var(--y);font-style:normal}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px}
+@media(max-width:560px){.fgrid{grid-template-columns:1fr}}
+.fblk h5{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:8px;font-weight:700}
+.fr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(34,42,61,.6);gap:5px}
+.fr:last-child{border-bottom:none}.fl{font-size:10px;color:var(--mu);white-space:nowrap;flex-shrink:0}
+.fr input{background:transparent;border:none;border-bottom:1px dashed transparent;color:var(--tx);font-size:11px;font-weight:600;font-family:var(--f);text-align:right;width:115px;padding:2px 3px;border-radius:3px;transition:all .18s;}
+.fr input:hover{border-bottom-color:var(--b)}.fr input:focus{outline:none;border-bottom-color:var(--y);color:var(--y);background:rgba(245,197,24,.04)}
+.fr input[readonly]{color:var(--mu);cursor:default}
+.cg{color:var(--gr)!important}.cy{color:var(--y)!important}.cm{color:var(--mu)!important}.cr{color:var(--rd)!important}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+@media(max-width:620px){.pgrid{grid-template-columns:1fr}}
+.pc{background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:13px}
+.pcname{font-family:var(--m);font-weight:700;font-size:11px;display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.prev-info{font-size:10px;color:var(--mu);margin-bottom:6px}
+.prev-info strong{color:var(--tx);font-family:var(--m)}
+.lec-in{width:100%;background:var(--s3);border:1px solid var(--b);color:var(--tx);font-family:var(--m);font-size:16px;font-weight:700;border-radius:6px;padding:8px 11px;text-align:center;outline:none;transition:all .18s;margin-bottom:5px;}
+.lec-in:focus{border-color:var(--y);background:rgba(245,197,24,.05);color:var(--y)}
+.lec-in::placeholder{color:var(--mu);font-size:11px}.lec-in:read-only{color:var(--mu);cursor:default}
+.pres{background:rgba(245,197,24,.06);border:1px solid rgba(245,197,24,.2);border-radius:7px;padding:8px 10px;text-align:center;margin-top:5px;}
+.pres-label{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--mu)}
+.pres-val{font-family:var(--m);font-weight:700;font-size:19px;color:var(--y);margin-top:1px}
+.pres-kwh{font-size:10px;color:var(--mu);margin-top:3px}.pres-kwh span{color:var(--gr)}
+/* suma check badge */
+.suma-check{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--m)}
+.suma-ok{background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.3);color:var(--gr)}
+.suma-err{background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.3);color:var(--rd)}
+.btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .16s;font-family:var(--f)}
+.btn-y{background:var(--y);color:#000}.btn-y:hover{background:var(--y2);transform:translateY(-1px)}
+.btn-b{background:var(--s2);color:var(--tx);border:1px solid var(--b)}.btn-b:hover{border-color:var(--y);color:var(--y)}
+.btn-gr{background:rgba(46,204,138,.1);color:var(--gr);border:1px solid rgba(46,204,138,.3)}.btn-gr:hover{background:rgba(46,204,138,.2)}
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:20px}
+@media(max-width:560px){.mgrid{grid-template-columns:1fr}}
+.mc{background:var(--s1);border:1px solid var(--b);border-radius:11px;padding:14px;position:relative;overflow:hidden;}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mc.andy::before{background:var(--y)}.mc.wilmer::before{background:var(--bl)}.mc.noemi::before{background:var(--pu)}
+.mc-name{font-family:var(--m);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.mc.andy .mc-name{color:var(--y)}.mc.wilmer .mc-name{color:var(--bl)}.mc.noemi .mc-name{color:var(--pu)}
+.mc-pago{font-family:var(--m);font-weight:700;font-size:24px;line-height:1}
+.mc.andy .mc-pago{color:var(--y)}.mc.wilmer .mc-pago{color:var(--bl)}.mc.noemi .mc-pago{color:var(--pu)}
+.mc-per{font-size:10px;color:var(--mu);margin-top:3px}
+.delta{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:6px}
+.delta-cea{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px;width:fit-content}
+.d-up{background:rgba(255,82,82,.1);color:var(--rd)}.d-dn{background:rgba(46,204,138,.1);color:var(--gr)}.d-eq{background:rgba(91,107,138,.1);color:var(--mu)}
+.ms{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px}
+.ms-item{background:var(--s2);border-radius:5px;padding:6px 8px}
+.ms-l{font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}.ms-v{font-size:12px;font-weight:700;margin-top:1px}
+.mini-t{width:100%;border-collapse:collapse;font-size:10px;margin-top:9px}
+.mini-t th{font-size:8px;color:var(--mu);text-transform:uppercase;padding:3px 4px;border-bottom:1px solid var(--b);text-align:left}
+.mini-t td{padding:3px 4px;border-bottom:1px solid rgba(34,42,61,.35)}.mini-t tr:last-child td{border-bottom:none}
+.hw{overflow-x:auto;border-radius:9px;border:1px solid var(--b);margin-bottom:11px}
+.ht{width:100%;border-collapse:collapse;font-size:11px}.ht thead{background:var(--s2)}
+.ht th{padding:8px 10px;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);font-weight:700;white-space:nowrap}
+.ht td{padding:8px 10px;border-top:1px solid var(--b);white-space:nowrap}.ht tr:hover td{background:rgba(255,255,255,.01)}
+.ctotal{font-weight:700;color:var(--y);font-family:var(--m)}.ckwh{color:var(--gr);font-weight:600}.cdim{color:var(--mu);font-size:10px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;flex-wrap:wrap;gap:7px}
+.sh h2{font-family:var(--m);font-size:13px;font-weight:700}
+.badge{background:var(--s2);border:1px solid var(--b);color:var(--mu);font-size:9px;padding:2px 8px;border-radius:20px;font-family:var(--m)}
+.empty{text-align:center;padding:40px 16px;color:var(--mu)}.empty .eico{font-size:30px;margin-bottom:8px}.empty p{font-size:11px}
+.tt-wrap{position:relative;cursor:default}
+.tt-wrap:hover .tt{display:block}
+.tt{display:none;position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#1a2030;border:1px solid var(--b);color:var(--tx);font-size:10px;font-weight:600;padding:4px 9px;border-radius:6px;white-space:nowrap;z-index:50;pointer-events:none}
+.tt::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a2030}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">⚡</div>
+    <span class="brand-name">CONSUMO <span>ENERGÉTICO</span></span>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="goTab('reg',this)">① Registro</button>
+    <button class="tab" onclick="goTab('per',this)">② Por Persona</button>
+    <button class="tab" onclick="goTab('hist',this)">③ Historial</button>
+  </div>
+</header>
+<main>
+<div class="pane on" id="tab-reg">
+  <div class="step">
+    <div class="step-head"><div class="snum">1</div><div class="shead"><h3>Cargar archivos</h3><p>PDF del recibo Pluz + Excel histórico (REG_*.xlsx)</p></div></div>
+    <div class="uprow">
+      <div class="uz" id="zpdf"><input type="file" id="fpdf" accept=".pdf">
+        <div class="uicon">📄</div><h4>Recibo Pluz (PDF)</h4><p>Arrastra o haz clic</p>
+        <span class="utag">Seleccionar PDF</span><div class="ufname" id="pfname"></div>
+      </div>
+      <div class="uz" id="zxls"><input type="file" id="fxls" accept=".xlsx">
+        <div class="uicon">📊</div><h4>Historial Excel (.xlsx)</h4><p>Archivo REG_FECHA.xlsx anterior</p>
+        <span class="utag">Seleccionar Excel</span><div class="ufname" id="xfname"></div>
+      </div>
+    </div>
+    <div id="st"></div>
+  </div>
+
+  <div class="step" id="p2" style="display:none">
+    <div class="step-head"><div class="snum">2</div><div class="shead"><h3>Verificar datos del recibo</h3><p>Todos los campos son editables</p></div></div>
+    <div class="card">
+      <div class="total-bar">
+        <h3>📋 Recibo detectado</h3>
+        <div class="total-badge"><input id="itotal" value="S/ —"></div>
+      </div>
+      <p class="hint">✏️ Haz clic en cualquier valor para <em>editarlo</em>. El Total Mes Actual se calcula automáticamente.</p>
+      <div class="fgrid">
+        <div class="incard fblk">
+          <h5>Datos del suministro</h5>
+          <div class="fr"><span class="fl">Período</span><input id="iperiodo"></div>
+          <div class="fr"><span class="fl">N° Suministro</span><input id="isumin"></div>
+          <div class="fr"><span class="fl">N° Recibo</span><input id="irecibo"></div>
+          <div class="fr"><span class="fl">Titular</span><input id="ititular"></div>
+          <div class="fr"><span class="fl">Emisión</span><input id="iemision"></div>
+          <div class="fr"><span class="fl">Vencimiento</span><input id="ivence"></div>
+          <div class="fr"><span class="fl">Lectura actual</span><input id="ilecact" class="cg"></div>
+          <div class="fr"><span class="fl">Lectura anterior</span><input id="ilecant"></div>
+          <div class="fr"><span class="fl">Consumo kWh total</span><input id="ikwh" class="cg"></div>
+          <div class="fr"><span class="fl">Precio kWh (S/.)</span><input id="iprecio" oninput="recalc()"></div>
+        </div>
+        <div class="incard fblk">
+          <h5>Detalle de importes</h5>
+          <div class="fr"><span class="fl">Reposic. y Mant.</span><input id="irepos" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Cargo Fijo</span><input id="icfijo" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Cargo por Energía</span><input id="iener"></div>
+          <div class="fr"><span class="fl">Interés / Convenio</span><input id="iinteres" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Alumbrado Público</span><input id="ialumb" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Subtotal</span><input id="isub" class="cy"></div>
+          <div class="fr"><span class="fl">IGV</span><input id="iigv" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Total Mes Actual ✶</span><input id="itmesact" class="cy" readonly></div>
+          <div class="fr"><span class="fl">Aporte Ley N°28749</span><input id="iaporte" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Mora / Cuota Conv.</span><input id="imora" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Redondeo actual</span><input id="iredact" oninput="recalc()"></div>
+          <div class="fr"><span class="fl">Redondeo ant. ✶</span><input id="iredant" class="cm" readonly></div>
+        </div>
+      </div>
+      <p style="font-size:9px;color:var(--mu)">✶ Calculados automáticamente (Total Mes = Subtotal + IGV · Redondeo ant. = del Excel histórico).</p>
+    </div>
+  </div>
+
+  <div class="step" id="p3" style="display:none">
+    <div class="step-head"><div class="snum">3</div><div class="shead"><h3>🔢 Lecturas individuales</h3><p>Ingresa la lectura ACTUAL de Wilmer y Noemi. Andy se calcula automáticamente del total.</p></div></div>
+    <div class="card">
+      <div class="pgrid">
+        <div class="pc">
+          <div class="pcname"><div class="dot" style="background:var(--bl)"></div>WILMER</div>
+          <div class="prev-info">Lec. anterior: <strong id="ant-WILMER">—</strong></div>
+          <input class="lec-in" id="act-WILMER" type="number" placeholder="Lectura actual" oninput="recalc()">
+          <div class="pres"><div class="pres-label">A PAGAR</div><div class="pres-val" id="pago-WILMER">—</div><div class="pres-kwh" id="kwh-WILMER"></div></div>
+        </div>
+        <div class="pc">
+          <div class="pcname"><div class="dot" style="background:var(--pu)"></div>NOEMI</div>
+          <div class="prev-info">Lec. anterior: <strong id="ant-NOEMI">—</strong></div>
+          <input class="lec-in" id="act-NOEMI" type="number" placeholder="Lectura actual" oninput="recalc()">
+          <div class="pres"><div class="pres-label">A PAGAR</div><div class="pres-val" id="pago-NOEMI">—</div><div class="pres-kwh" id="kwh-NOEMI"></div></div>
+        </div>
+        <div class="pc">
+          <div class="pcname"><div class="dot" style="background:var(--y)"></div>ANDY <span style="font-size:8px;color:var(--mu);font-weight:400;margin-left:3px">(automático)</span></div>
+          <div class="prev-info">Lec. anterior: <strong id="ant-ANDY">—</strong></div>
+          <input class="lec-in" id="act-ANDY" readonly placeholder="—">
+          <div id="andy-warn" style="display:none;font-size:10px;color:var(--rd);margin-top:4px;padding:5px 8px;background:rgba(255,82,82,.08);border-radius:5px;border:1px solid rgba(255,82,82,.2)"></div>
+          <div class="pres" style="border-color:rgba(245,197,24,.3)"><div class="pres-label">A PAGAR</div><div class="pres-val" id="pago-ANDY">—</div><div class="pres-kwh" id="kwh-ANDY"></div></div>
+        </div>
+      </div>
+      <div id="andy-warn" style="display:none;margin-top:10px;padding:9px 13px;border-radius:7px;background:#1a0a0a;border:1px solid #4a1010;color:var(--rd);font-size:11px;font-weight:600"></div>
+      <div id="suma-badge" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="step" id="p4" style="display:none">
+    <div class="step-head"><div class="snum">4</div><div class="shead"><h3>Descargar Excel actualizado</h3><p>Mismo formato original — listo para cargar el próximo mes</p></div></div>
+    <div class="card">
+      <p style="font-size:11px;color:var(--mu);margin-bottom:12px">Genera el archivo con las hojas "formato" e "individual" actualizadas con el nuevo mes.</p>
+      <div class="brow">
+        <button class="btn btn-gr" onclick="doDownload()">📥 Descargar REG_fecha.xlsx</button>
+        <button class="btn btn-b" onclick="reiniciar()">🔄 Nuevo registro</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pane" id="tab-per">
+  <div class="sh"><h2>PAGOS POR PERSONA</h2><span class="badge" id="per-badge">—</span></div>
+  <div id="per-cont"></div>
+  <div class="empty" id="per-empty" style="display:none"><div class="eico">👥</div><p>Carga el Excel histórico en Registro para ver datos.</p></div>
+</div>
+
+<div class="pane" id="tab-hist">
+  <div class="sh"><h2>HISTORIAL DE RECIBOS</h2><span class="badge" id="hist-badge">—</span></div>
+  <div class="hw">
+    <table class="ht">
+      <thead><tr><th>Período</th><th>kWh</th><th>P/kWh</th><th>Repos.</th><th>C.Fijo</th><th>Energía</th><th>Interés</th><th>Alumbrado</th><th>Subtotal</th><th>IGV</th><th>Tot.Mes</th><th>Aporte</th><th>Mora</th><th>Red.Ant</th><th>Red.Act</th><th>TOTAL</th></tr></thead>
+      <tbody id="hist-body"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="hist-empty"><div class="eico">🗂</div><p>Carga el Excel histórico para ver el historial.</p></div>
+</div>
+</main>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const BUILTIN={"recibos":[{"id":1000,"periodo":"DICIEMBRE 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"47132","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"484","precioKwh":"0.6192","reposic":"1.61","cargoFijo":"2.25","energia":"299.69","interes":"0","alumbrado":"12.6","subtotal":"316.15","igv":"56.91","totalMes":"373.06","aporte":"5.18","mora":"0","redondeoAnt":"-0.06","redondeoAct":"0.32","total":"378.5","cea":"26.27"},{"id":1001,"periodo":"NOVIEMBRE 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"46648","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"507","precioKwh":"0.6233","reposic":"1.63","cargoFijo":"2.26","energia":"316.01","interes":"2.01","alumbrado":"33.6","subtotal":"355.51","igv":"63.99","totalMes":"419.51","aporte":"5.42","mora":"0","redondeoAnt":"-0.32","redondeoAct":"0.24","total":"425.01","cea":"36.33"},{"id":1002,"periodo":"OCTUBRE 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"46141","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"530","precioKwh":"0.6297","reposic":"1.64","cargoFijo":"2.29","energia":"333.74","interes":"1.57","alumbrado":"37.8","subtotal":"377.04","igv":"67.87","totalMes":"444.91","aporte":"5.67","mora":"0","redondeoAnt":"-0.24","redondeoAct":"-0.37","total":"450.08","cea":"38.78"},{"id":1003,"periodo":"SEPTIEMBRE 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"45611","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"485","precioKwh":"0.6315","reposic":"1.65","cargoFijo":"2.3","energia":"306.28","interes":"2.41","alumbrado":"20.65","subtotal":"333.29","igv":"59.99","totalMes":"393.28","aporte":"5.19","mora":"0","redondeoAnt":"0.37","redondeoAct":"0.37","total":"399.42","cea":"31.05"},{"id":1004,"periodo":"AGOSTO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"45126","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"556","precioKwh":"0.649","reposic":"1.66","cargoFijo":"2.31","energia":"360.84","interes":"2.11","alumbrado":"41.3","subtotal":"408.22","igv":"73.48","totalMes":"481.7","aporte":"5.95","mora":"0","redondeoAnt":"-0.37","redondeoAct":"-0.14","total":"487.31","cea":"42.16"},{"id":1005,"periodo":"JULIO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"44570","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"578","precioKwh":"0.6583","reposic":"1.68","cargoFijo":"2.32","energia":"380.5","interes":"0","alumbrado":"34.3","subtotal":"418.8","igv":"75.38","totalMes":"494.18","aporte":"6.18","mora":"0","redondeoAnt":"0.14","redondeoAct":"0.14","total":"500.64","cea":"40.05"},{"id":1006,"periodo":"JUNIO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"43992","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"584","precioKwh":"0.6589","reposic":"1.68","cargoFijo":"2.33","energia":"384.8","interes":"2.44","alumbrado":"30.1","subtotal":"421.35","igv":"75.84","totalMes":"497.19","aporte":"6.25","mora":"0","redondeoAnt":"-0.14","redondeoAct":"0.01","total":"503.5","cea":"39.57"},{"id":1007,"periodo":"MAYO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"43408","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"686","precioKwh":"0.6613","reposic":"1.69","cargoFijo":"2.34","energia":"453.65","interes":"1.93","alumbrado":"24.5","subtotal":"484.11","igv":"87.14","totalMes":"571.25","aporte":"7.34","mora":"0","redondeoAnt":"-0.01","redondeoAct":"0.3","total":"579.0","cea":"41.78"},{"id":1008,"periodo":"ABRIL 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"42722","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"666","precioKwh":"0.663","reposic":"1.69","cargoFijo":"2.34","energia":"441.56","interes":"1.47","alumbrado":"28.0","subtotal":"475.06","igv":"85.51","totalMes":"560.57","aporte":"7.13","mora":"0","redondeoAnt":"-0.3","redondeoAct":"0.04","total":"567.48","cea":"41.97"},{"id":1009,"periodo":"MARZO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"42056","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"636","precioKwh":"0.6629","reposic":"1.69","cargoFijo":"2.34","energia":"421.6","interes":"1.89","alumbrado":"31.5","subtotal":"459.02","igv":"82.62","totalMes":"541.65","aporte":"6.81","mora":"0","redondeoAnt":"-0.04","redondeoAct":"0.37","total":"548.92","cea":"42.44"},{"id":1010,"periodo":"MARZO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"41420","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"607","precioKwh":"0.6704","reposic":"1.69","cargoFijo":"2.34","energia":"406.93","interes":"2.25","alumbrado":"30.1","subtotal":"443.31","igv":"79.8","totalMes":"523.11","aporte":"6.49","mora":"0","redondeoAnt":"-0.37","redondeoAct":"0.09","total":"529.5","cea":"40.86"},{"id":1011,"periodo":"ENERO 2025","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"40813","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"599","precioKwh":"0.6742","reposic":"1.69","cargoFijo":"2.34","energia":"403.85","interes":"2.03","alumbrado":"32.2","subtotal":"442.11","igv":"79.58","totalMes":"521.68","aporte":"6.41","mora":"0","redondeoAnt":"-0.09","redondeoAct":"0.31","total":"528.49","cea":"41.55"},{"id":1012,"periodo":"DICIEMBRE 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"40214","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"496","precioKwh":"0.6742","reposic":"1.69","cargoFijo":"2.34","energia":"334.4","interes":"1.95","alumbrado":"14.7","subtotal":"355.08","igv":"63.91","totalMes":"419.0","aporte":"5.11","mora":"0","redondeoAnt":"-0.31","redondeoAct":"0.05","total":"424.01","cea":"29.87"},{"id":1013,"periodo":"NOVIEMBRE 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"39718","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"502","precioKwh":"0.67","reposic":"1.7","cargoFijo":"2.36","energia":"336.34","interes":"1.82","alumbrado":"31.5","subtotal":"373.72","igv":"67.27","totalMes":"440.99","aporte":"5.17","mora":"0","redondeoAnt":"-0.05","redondeoAct":"0.24","total":"446.5","cea":"36.72"},{"id":1014,"periodo":"OCTUBRE 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"39216","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"480","precioKwh":"0.6681","reposic":"1.7","cargoFijo":"2.37","energia":"320.69","interes":"1.55","alumbrado":"17.85","subtotal":"344.16","igv":"61.95","totalMes":"406.11","aporte":"4.94","mora":"0","redondeoAnt":"-0.24","redondeoAct":"0.07","total":"411.0","cea":"30.1"},{"id":1015,"periodo":"SEPTIEMBRE 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"38736","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"445","precioKwh":"0.6679","reposic":"1.7","cargoFijo":"2.37","energia":"297.22","interes":"0","alumbrado":"19.95","subtotal":"321.24","igv":"57.82","totalMes":"379.06","aporte":"4.58","mora":"0","redondeoAnt":"-0.07","redondeoAct":"0.43","total":"384.0","cea":"28.93"},{"id":1016,"periodo":"AGOSTO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"38291","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"443","precioKwh":"0.6646","reposic":"1.69","cargoFijo":"2.36","energia":"294.42","interes":"1.84","alumbrado":"21.35","subtotal":"321.66","igv":"57.9","totalMes":"379.56","aporte":"4.56","mora":"0","redondeoAnt":"-0.43","redondeoAct":"0.15","total":"383.99","cea":"29.86"},{"id":1017,"periodo":"JULIO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"37848","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"441","precioKwh":"0.6631","reposic":"1.69","cargoFijo":"2.36","energia":"292.43","interes":"2.18","alumbrado":"19.25","subtotal":"317.91","igv":"57.22","totalMes":"375.13","aporte":"0.2","mora":"0","redondeoAnt":"-0.15","redondeoAct":"0.44","total":"375.82","cea":"27.8"},{"id":1018,"periodo":"JUNIO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"37407","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"470","precioKwh":"0.6631","reposic":"1.69","cargoFijo":"2.36","energia":"311.66","interes":"1.9","alumbrado":"15.05","subtotal":"332.66","igv":"59.88","totalMes":"392.54","aporte":"4.84","mora":"0","redondeoAnt":"-0.44","redondeoAct":"0.26","total":"397.34","cea":"28.56"},{"id":1019,"periodo":"MAYO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"36937","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"525","precioKwh":"0.6653","reposic":"1.7","cargoFijo":"2.37","energia":"349.28","interes":"2.34","alumbrado":"29.4","subtotal":"385.09","igv":"69.32","totalMes":"454.41","aporte":"5.41","mora":"0","redondeoAnt":"-0.26","redondeoAct":"0.41","total":"460.16","cea":"36.96"},{"id":1020,"periodo":"MAYO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"36412","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"562","precioKwh":"0.6672","reposic":"1.7","cargoFijo":"2.37","energia":"374.97","interes":"2.5","alumbrado":"28.0","subtotal":"409.54","igv":"73.72","totalMes":"483.25","aporte":"5.79","mora":"0","redondeoAnt":"-0.41","redondeoAct":"0.13","total":"488.99","cea":"38.01"},{"id":1021,"periodo":"MARZO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"35850","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"532","precioKwh":"0.6672","reposic":"1.7","cargoFijo":"2.37","energia":"354.95","interes":"0","alumbrado":"25.9","subtotal":"384.92","igv":"69.29","totalMes":"454.21","aporte":"5.48","mora":"0","redondeoAnt":"-0.13","redondeoAct":"0.44","total":"460.0","cea":"35.02"},{"id":1022,"periodo":"FEBRERO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"35318","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"540","precioKwh":"0.673","reposic":"1.71","cargoFijo":"2.38","energia":"363.42","interes":"2.37","alumbrado":"31.5","subtotal":"401.38","igv":"72.25","totalMes":"473.63","aporte":"5.56","mora":"0","redondeoAnt":"-0.44","redondeoAct":"0.06","total":"479.0","cea":"38.53"},{"id":1023,"periodo":"ENERO 2024","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"34778","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"552","precioKwh":"0.6758","reposic":"1.71","cargoFijo":"2.39","energia":"373.04","interes":"2.01","alumbrado":"35.0","subtotal":"414.15","igv":"74.55","totalMes":"488.7","aporte":"5.39","mora":"0","redondeoAnt":"-0.06","redondeoAct":"0.49","total":"494.7","cea":"40.55"},{"id":1024,"periodo":"DICIEMBRE 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"34226","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"421","precioKwh":"0.6769","reposic":"1.73","cargoFijo":"2.4","energia":"284.97","interes":"1.87","alumbrado":"16.45","subtotal":"307.42","igv":"55.34","totalMes":"362.76","aporte":"4.17","mora":"0","redondeoAnt":"-0.49","redondeoAct":"0.41","total":"367.0","cea":"27.34"},{"id":1025,"periodo":"NOVIEMBRE 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"33805","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"442","precioKwh":"0.6548","reposic":"1.73","cargoFijo":"2.4","energia":"289.42","interes":"1.19","alumbrado":"14.7","subtotal":"309.44","igv":"55.7","totalMes":"365.14","aporte":"4.38","mora":"0","redondeoAnt":"-0.41","redondeoAct":"0.32","total":"369.5","cea":"26.69"},{"id":1026,"periodo":"OCTUBRE 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"33363","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"369","precioKwh":"0.642","reposic":"1.72","cargoFijo":"2.4","energia":"236.9","interes":"1.4","alumbrado":"17.15","subtotal":"259.57","igv":"46.72","totalMes":"306.29","aporte":"3.65","mora":"0","redondeoAnt":"-0.32","redondeoAct":"0.3","total":"310.0","cea":"24.37"},{"id":1027,"periodo":"SEPTIEMBRE 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"32994","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"439","precioKwh":"0.6401","reposic":"1.65","cargoFijo":"2.38","energia":"281.0","interes":"0.1","alumbrado":"17.5","subtotal":"302.63","igv":"54.47","totalMes":"357.11","aporte":"4.35","mora":"0","redondeoAnt":"-0.3","redondeoAct":"0.35","total":"361.51","cea":"26.83"},{"id":1028,"periodo":"AGOSTO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"32555","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"504","precioKwh":"0.6635","reposic":"1.61","cargoFijo":"2.41","energia":"334.4","interes":"2.16","alumbrado":"33.6","subtotal":"374.18","igv":"67.35","totalMes":"441.54","aporte":"4.99","mora":"0","redondeoAnt":"-0.35","redondeoAct":"0.14","total":"446.51","cea":"37.37"},{"id":1029,"periodo":"JULIO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"32051","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"478","precioKwh":"0.6738","reposic":"1.61","cargoFijo":"2.42","energia":"322.08","interes":"1.35","alumbrado":"16.8","subtotal":"344.26","igv":"61.97","totalMes":"406.22","aporte":"4.74","mora":"0","redondeoAnt":"-0.14","redondeoAct":"0.12","total":"411.0","cea":"29.64"},{"id":1030,"periodo":"JUNIO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"31573","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"473","precioKwh":"0.6824","reposic":"1.64","cargoFijo":"2.45","energia":"322.78","interes":"2.54","alumbrado":"16.1","subtotal":"345.51","igv":"62.19","totalMes":"407.7","aporte":"1.77","mora":"0","redondeoAnt":"-0.12","redondeoAct":"0.44","total":"410.0","cea":"29.07"},{"id":1031,"periodo":"MAYO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"31100","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"497","precioKwh":"0.6824","reposic":"1.64","cargoFijo":"2.45","energia":"339.15","interes":"2.54","alumbrado":"16.1","subtotal":"361.88","igv":"65.14","totalMes":"427.02","aporte":"4.92","mora":"0","redondeoAnt":"-0.16","redondeoAct":"0.44","total":"432.43","cea":"31.09"},{"id":1032,"periodo":"ABRIL 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"30603","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"583","precioKwh":"0.6921","reposic":"1.66","cargoFijo":"2.46","energia":"403.49","interes":"2.94","alumbrado":"35.0","subtotal":"445.55","igv":"80.2","totalMes":"525.75","aporte":"5.77","mora":"0","redondeoAnt":"-0.44","redondeoAct":"0.24","total":"531.57","cea":"42.69"},{"id":1033,"periodo":"MARZO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"30020","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"680","precioKwh":"0.6944","reposic":"1.66","cargoFijo":"2.46","energia":"472.19","interes":"3.03","alumbrado":"25.2","subtotal":"504.54","igv":"90.82","totalMes":"595.36","aporte":"6.73","mora":"0","redondeoAnt":"-0.24","redondeoAct":"0.35","total":"603.0","cea":"43.41"},{"id":1034,"periodo":"ENERO 2023","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"29340","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"757","precioKwh":"0.7181","reposic":"1.66","cargoFijo":"2.49","energia":"543.6","interes":"0.18","alumbrado":"35.2","subtotal":"583.13","igv":"104.96","totalMes":"688.1","aporte":"7.49","mora":"0","redondeoAnt":"-0.35","redondeoAct":"0.26","total":"695.51","cea":"50.63"},{"id":1035,"periodo":"DICIEMBRE 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"28583","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"647","precioKwh":"0.7294","reposic":"1.66","cargoFijo":"2.5","energia":"471.92","interes":"2.46","alumbrado":"37.8","subtotal":"516.34","igv":"92.94","totalMes":"609.28","aporte":"6.41","mora":"0","redondeoAnt":"-0.26","redondeoAct":"0.28","total":"601.0","cea":"48.0"},{"id":1036,"periodo":"NOVIEMBRE 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"27936","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"562","precioKwh":"0.7302","reposic":"1.67","cargoFijo":"2.5","energia":"410.37","interes":"1.85","alumbrado":"37.1","subtotal":"453.49","igv":"81.63","totalMes":"535.12","aporte":"5.17","mora":"0","redondeoAnt":"-0.28","redondeoAct":"0.38","total":"540.5","cea":"43.38"},{"id":1037,"periodo":"DICIEMBRE 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"27374","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"595","precioKwh":"0.6991","reposic":"1.66","cargoFijo":"2.93","energia":"415.96","interes":"1.32","alumbrado":"36.4","subtotal":"458.27","igv":"82.49","totalMes":"540.76","aporte":"5.47","mora":"0","redondeoAnt":"-0.38","redondeoAct":"0.11","total":"546.0","cea":"43.35"},{"id":1038,"periodo":"OCTUBRE 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"26779","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"613","precioKwh":"0.6812","reposic":"1.66","cargoFijo":"3.31","energia":"417.58","interes":"0.9","alumbrado":"34.3","subtotal":"457.75","igv":"82.39","totalMes":"540.14","aporte":"5.64","mora":"0","redondeoAnt":"-0.11","redondeoAct":"0.32","total":"545.99","cea":"42.8"},{"id":1039,"periodo":"SEPTIEMBRE 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"26166","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"516","precioKwh":"0.6799","reposic":"1.66","cargoFijo":"3.31","energia":"350.83","interes":"0.7","alumbrado":"35.7","subtotal":"392.2","igv":"70.6","totalMes":"462.79","aporte":"4.75","mora":"0","redondeoAnt":"-0.32","redondeoAct":"0.26","total":"467.49","cea":"38.89"},{"id":1040,"periodo":"AGOSTO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"25650","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"546","precioKwh":"0.6642","reposic":"1.63","cargoFijo":"3.27","energia":"362.65","interes":"1.68","alumbrado":"38.5","subtotal":"407.73","igv":"73.39","totalMes":"481.13","aporte":"5.02","mora":"0","redondeoAnt":"-0.26","redondeoAct":"0.23","total":"336.01","cea":"-8.88"},{"id":1041,"periodo":"JULIO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"25104","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"651","precioKwh":"0.656","reposic":"1.61","cargoFijo":"3.24","energia":"427.06","interes":"1.04","alumbrado":"35.7","subtotal":"468.65","igv":"84.36","totalMes":"553.0","aporte":"5.99","mora":"0","redondeoAnt":"-0.23","redondeoAct":"0.24","total":"559.0","cea":"43.98"},{"id":1042,"periodo":"JUNIO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"24453","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"768","precioKwh":"0.6546","reposic":"1.61","cargoFijo":"3.21","energia":"502.73","interes":"0.87","alumbrado":"35.2","subtotal":"543.62","igv":"97.85","totalMes":"641.47","aporte":"7.07","mora":"0","redondeoAnt":"-0.24","redondeoAct":"0.28","total":"650.0","cea":"48.62"},{"id":1043,"periodo":"MAYO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"23685","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"682","precioKwh":"0.6521","reposic":"1.58","cargoFijo":"3.16","energia":"444.73","interes":"0.41","alumbrado":"30.8","subtotal":"480.68","igv":"86.52","totalMes":"567.2","aporte":"6.27","mora":"0","redondeoAnt":"-0.28","redondeoAct":"0.31","total":"573.5","cea":"42.92"},{"id":1044,"periodo":"ABRIL 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"23003","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"533","precioKwh":"0.6505","reposic":"1.56","cargoFijo":"3.1","energia":"346.72","interes":"1.23","alumbrado":"34.3","subtotal":"386.91","igv":"69.64","totalMes":"456.55","aporte":"4.9","mora":"0","redondeoAnt":"-0.31","redondeoAct":"0.11","total":"378.93","cea":"10.74"},{"id":1045,"periodo":"MARZO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"22470","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"591","precioKwh":"0.6499","reposic":"1.55","cargoFijo":"3.07","energia":"384.09","interes":"1.04","alumbrado":"29.4","subtotal":"419.15","igv":"75.45","totalMes":"494.6","aporte":"5.44","mora":"0","redondeoAnt":"-0.11","redondeoAct":"0.02","total":"500.0","cea":"38.64"},{"id":1046,"periodo":"FEBRERO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"21879","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"548","precioKwh":"0.6471","reposic":"1.57","cargoFijo":"3.06","energia":"354.61","interes":"0","alumbrado":"32.9","subtotal":"392.14","igv":"70.59","totalMes":"462.73","aporte":"5.04","mora":"0","redondeoAnt":"-0.02","redondeoAct":"0.25","total":"468.0","cea":"37.8"},{"id":1047,"periodo":"ENERO 2022","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"21331","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"572","precioKwh":"0.6458","reposic":"1.57","cargoFijo":"3.06","energia":"369.4","interes":"0","alumbrado":"29.4","subtotal":"403.43","igv":"72.62","totalMes":"476.04","aporte":"5.26","mora":"0","redondeoAnt":"-0.25","redondeoAct":"0.44","total":"481.49","cea":"37.37"},{"id":1048,"periodo":"DICIEMBRE 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"20759","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"475","precioKwh":"0.6448","reposic":"1.56","cargoFijo":"3.03","energia":"306.28","interes":"0","alumbrado":"12.95","subtotal":"323.82","igv":"58.29","totalMes":"382.11","aporte":"4.18","mora":"0","redondeoAnt":"-0.44","redondeoAct":"0.15","total":"386.0","cea":"26.57"},{"id":1049,"periodo":"NOVIEMBRE 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"20284","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"491","precioKwh":"0.6469","reposic":"1.56","cargoFijo":"3.03","energia":"317.63","interes":"0.06","alumbrado":"15.75","subtotal":"338.03","igv":"60.85","totalMes":"398.87","aporte":"4.32","mora":"0","redondeoAnt":"-0.15","redondeoAct":"0.23","total":"387.99","cea":"23.46"},{"id":1050,"periodo":"OCTUBRE 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"19793","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"455","precioKwh":"0.6303","reposic":"1.55","cargoFijo":"3.02","energia":"286.79","interes":"0","alumbrado":"16.45","subtotal":"307.81","igv":"55.41","totalMes":"363.21","aporte":"4.0","mora":"0","redondeoAnt":"-0.23","redondeoAct":"0.01","total":"366.99","cea":"26.74"},{"id":1051,"periodo":"SEPTIEMBRE 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"19338","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"539","precioKwh":"0.6134","reposic":"1.52","cargoFijo":"2.97","energia":"330.62","interes":"0.79","alumbrado":"34.3","subtotal":"370.2","igv":"66.64","totalMes":"436.84","aporte":"4.74","mora":"0","redondeoAnt":"-0.01","redondeoAct":"0.39","total":"442.0","cea":"37.13"},{"id":1052,"periodo":"AGOSTO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"18799","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"487","precioKwh":"0.5975","reposic":"1.49","cargoFijo":"2.92","energia":"290.98","interes":"1.06","alumbrado":"16.45","subtotal":"324.73","igv":"58.45","totalMes":"383.18","aporte":"4.29","mora":"0","redondeoAnt":"-0.39","redondeoAct":"0.12","total":"404.5","cea":"37.84"},{"id":1053,"periodo":"JULIO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"18312","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"507","precioKwh":"0.5865","reposic":"1.46","cargoFijo":"2.87","energia":"297.36","interes":"1.39","alumbrado":"34.3","subtotal":"337.38","igv":"60.73","totalMes":"398.1","aporte":"4.46","mora":"0","redondeoAnt":"-0.12","redondeoAct":"0.43","total":"402.99","cea":"35.21"},{"id":1054,"periodo":"JUNIO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"17805","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"513","precioKwh":"0.5813","reposic":"1.44","cargoFijo":"2.83","energia":"298.21","interes":"0.85","alumbrado":"30.8","subtotal":"334.13","igv":"60.14","totalMes":"394.27","aporte":"4.51","mora":"0","redondeoAnt":"-0.43","redondeoAct":"0.11","total":"398.49","cea":"33.43"},{"id":1055,"periodo":"MAYO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"17292","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"535","precioKwh":"0.5907","reposic":"1.44","cargoFijo":"2.82","energia":"316.02","interes":"0","alumbrado":"28.0","subtotal":"348.28","igv":"62.69","totalMes":"410.98","aporte":"4.71","mora":"0","redondeoAnt":"-0.11","redondeoAct":"0.43","total":"416.01","cea":"33.33"},{"id":1056,"periodo":"ABRIL 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"16757","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"620","precioKwh":"0.5948","reposic":"1.41","cargoFijo":"2.77","energia":"368.78","interes":"0.78","alumbrado":"25.9","subtotal":"399.64","igv":"71.93","totalMes":"471.57","aporte":"5.46","mora":"0","redondeoAnt":"-0.43","redondeoAct":"0.37","total":"476.97","cea":"36.06"},{"id":1057,"periodo":"MARZO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"16137","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"595","precioKwh":"0.591","reposic":"1.4","cargoFijo":"2.74","energia":"351.64","interes":"0.57","alumbrado":"25.2","subtotal":"381.55","igv":"68.68","totalMes":"450.23","aporte":"5.24","mora":"0","redondeoAnt":"-0.37","redondeoAct":"0.39","total":"455.49","cea":"34.62"},{"id":1058,"periodo":"FEBRERO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"15542","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"555","precioKwh":"0.5918","reposic":"1.38","cargoFijo":"2.71","energia":"328.45","interes":"0.16","alumbrado":"26.6","subtotal":"359.3","igv":"64.67","totalMes":"423.97","aporte":"4.88","mora":"0","redondeoAnt":"-0.39","redondeoAct":"0.04","total":"428.54","cea":"33.36"},{"id":1059,"periodo":"ENERO 2021","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"14987","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"588","precioKwh":"0.5918","reposic":"1.37","cargoFijo":"2.69","energia":"347.98","interes":"0","alumbrado":"28.0","subtotal":"380.04","igv":"68.41","totalMes":"448.45","aporte":"5.17","mora":"0","redondeoAnt":"-0.04","redondeoAct":"0.42","total":"454.0","cea":"35.34"},{"id":1060,"periodo":"DICIEMBRE 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"14399","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"472","precioKwh":"0.5916","reposic":"1.37","cargoFijo":"2.69","energia":"279.24","interes":"0","alumbrado":"13.65","subtotal":"296.95","igv":"53.45","totalMes":"350.4","aporte":"4.06","mora":"0","redondeoAnt":"-0.42","redondeoAct":"0.46","total":"354.5","cea":"25.09"},{"id":1061,"periodo":"NOVIEMBRE 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"13927","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"454","precioKwh":"0.5798","reposic":"1.36","cargoFijo":"2.67","energia":"263.23","interes":"0.12","alumbrado":"14.0","subtotal":"281.38","igv":"50.65","totalMes":"332.03","aporte":"3.9","mora":"0","redondeoAnt":"-0.46","redondeoAct":"0.03","total":"335.5","cea":"24.09"},{"id":1062,"periodo":"OCTUBRE 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"13473","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"450","precioKwh":"0.5723","reposic":"1.36","cargoFijo":"2.66","energia":"257.54","interes":"0.12","alumbrado":"14.0","subtotal":"275.68","igv":"49.62","totalMes":"325.3","aporte":"3.87","mora":"0","redondeoAnt":"-0.03","redondeoAct":"0.45","total":"321.0","cea":"21.15"},{"id":1063,"periodo":"SEPTIEMBRE 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"13023","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"441","precioKwh":"0.5716","reposic":"1.36","cargoFijo":"2.66","energia":"252.08","interes":"0","alumbrado":"16.8","subtotal":"272.9","igv":"49.12","totalMes":"322.02","aporte":"3.79","mora":"0","redondeoAnt":"-0.45","redondeoAct":"0.14","total":"325.5","cea":"24.47"},{"id":1064,"periodo":"AGOSTO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"12582","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"427","precioKwh":"0.5643","reposic":"1.36","cargoFijo":"2.66","energia":"240.96","interes":"0","alumbrado":"15.75","subtotal":"260.73","igv":"46.93","totalMes":"307.66","aporte":"3.67","mora":"0","redondeoAnt":"-0.14","redondeoAct":"0.31","total":"311.5","cea":"23.51"},{"id":1065,"periodo":"JULIO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"12155","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"447","precioKwh":"0.5578","reposic":"1.35","cargoFijo":"2.69","energia":"249.34","interes":"0","alumbrado":"16.8","subtotal":"270.18","igv":"48.63","totalMes":"318.81","aporte":"3.84","mora":"0","redondeoAnt":"-0.31","redondeoAct":"0.17","total":"322.26","cea":"24.39"},{"id":1066,"periodo":"JUNIO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"11708","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"562","precioKwh":"0.5345","reposic":"1.35","cargoFijo":"2.69","energia":"300.39","interes":"36.28","alumbrado":"16.11","subtotal":"356.82","igv":"64.23","totalMes":"421.05","aporte":"13.66","mora":"0","redondeoAnt":"-0.17","redondeoAct":"0.46","total":"435.0","cea":"44.87"},{"id":1067,"periodo":"MAYO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"11146","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"486","precioKwh":"0.5474","reposic":"1.35","cargoFijo":"2.69","energia":"266.04","interes":"0","alumbrado":"13.65","subtotal":"283.73","igv":"51.07","totalMes":"334.8","aporte":"0","mora":"0","redondeoAnt":"-0.46","redondeoAct":"0.16","total":"334.5","cea":"22.82"},{"id":1068,"periodo":"ABRIL 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"10660","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"540","precioKwh":"0.5474","reposic":"1.35","cargoFijo":"2.69","energia":"295.6","interes":"0","alumbrado":"23.1","subtotal":"322.74","igv":"58.09","totalMes":"380.83","aporte":"0","mora":"0","redondeoAnt":"-0.16","redondeoAct":"0.33","total":"381.0","cea":"28.47"},{"id":1069,"periodo":"MARZO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"10120","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"544","precioKwh":"0.5474","reposic":"1.35","cargoFijo":"2.69","energia":"297.79","interes":"0","alumbrado":"23.1","subtotal":"324.93","igv":"58.49","totalMes":"383.41","aporte":"4.68","mora":"0","redondeoAnt":"-0.33","redondeoAct":"0.23","total":"388.0","cea":"30.07"},{"id":1070,"periodo":"FEBRERO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"9576","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"538","precioKwh":"0.5513","reposic":"1.35","cargoFijo":"2.69","energia":"296.6","interes":"0","alumbrado":"24.5","subtotal":"325.14","igv":"58.53","totalMes":"383.66","aporte":"4.63","mora":"0","redondeoAnt":"-0.23","redondeoAct":"0","total":"388.06","cea":"30.49"},{"id":1071,"periodo":"ENERO 2020","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"9038","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"514","precioKwh":"0.5531","reposic":"1.35","cargoFijo":"2.69","energia":"284.29","interes":"0","alumbrado":"25.2","subtotal":"313.53","igv":"56.44","totalMes":"369.97","aporte":"4.42","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"374.39","cea":"30.03"},{"id":1072,"periodo":"DICIEMBRE 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"8524","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"441","precioKwh":"0.5437","reposic":"2.35","cargoFijo":"3.69","energia":"239.77","interes":"0","alumbrado":"13.3","subtotal":"259.11","igv":"46.64","totalMes":"305.75","aporte":"5.28","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"311.03","cea":"23.75"},{"id":1073,"periodo":"NOVIEMBRE 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"8083","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"510","precioKwh":"0.5437","reposic":"1.35","cargoFijo":"2.69","energia":"277.29","interes":"0","alumbrado":"28.0","subtotal":"309.33","igv":"55.68","totalMes":"365.01","aporte":"4.28","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"369.29","cea":"30.67"},{"id":1074,"periodo":"OCTUBRE 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"7573","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"445","precioKwh":"0.5294","reposic":"1.32","cargoFijo":"2.7","energia":"235.58","interes":"0","alumbrado":"14.7","subtotal":"254.3","igv":"45.77","totalMes":"300.08","aporte":"3.74","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"303.82","cea":"22.74"},{"id":1075,"periodo":"SEPTIEMBRE 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"7128","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"402","precioKwh":"0.5237","reposic":"1.34","cargoFijo":"2.69","energia":"210.53","interes":"0","alumbrado":"17.5","subtotal":"232.06","igv":"41.77","totalMes":"273.83","aporte":"3.38","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"277.21","cea":"22.23"},{"id":1076,"periodo":"AGOSTO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"6726","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"432","precioKwh":"0.531","reposic":"1.35","cargoFijo":"2.68","energia":"229.39","interes":"0","alumbrado":"17.5","subtotal":"250.92","igv":"45.17","totalMes":"296.09","aporte":"3.63","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"299.72","cea":"23.44"},{"id":1077,"periodo":"JULIO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"6294","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"406","precioKwh":"0.5335","reposic":"1.35","cargoFijo":"2.68","energia":"216.6","interes":"0","alumbrado":"16.8","subtotal":"237.43","igv":"42.74","totalMes":"280.17","aporte":"3.41","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"283.58","cea":"22.33"},{"id":1078,"periodo":"JUNIO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"5888","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"388","precioKwh":"0.5332","reposic":"1.35","cargoFijo":"2.68","energia":"206.88","interes":"0","alumbrado":"14.0","subtotal":"224.91","igv":"40.48","totalMes":"265.4","aporte":"3.26","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"268.66","cea":"20.59"},{"id":1079,"periodo":"MAYO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"5500","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"449","precioKwh":"0.5337","reposic":"1.35","cargoFijo":"2.68","energia":"239.63","interes":"0.43","alumbrado":"12.95","subtotal":"257.04","igv":"46.27","totalMes":"303.31","aporte":"3.77","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"345.53","cea":"35.3"},{"id":1080,"periodo":"ABRIL 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"5051","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"434","precioKwh":"0.5341","reposic":"1.35","cargoFijo":"2.68","energia":"231.8","interes":"0.89","alumbrado":"15.4","subtotal":"252.12","igv":"45.38","totalMes":"297.5","aporte":"3.65","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"339.14","cea":"35.78"},{"id":1081,"periodo":"MARZO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"4617","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"518","precioKwh":"0.5349","reposic":"1.35","cargoFijo":"2.69","energia":"277.08","interes":"1.33","alumbrado":"23.8","subtotal":"306.25","igv":"55.12","totalMes":"361.37","aporte":"4.31","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"402.79","cea":"41.9"},{"id":1082,"periodo":"FEBRERO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"4099","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"513","precioKwh":"0.5282","reposic":"1.35","cargoFijo":"2.69","energia":"270.97","interes":"1.77","alumbrado":"33.6","subtotal":"310.38","igv":"55.87","totalMes":"366.24","aporte":"4.31","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"407.66","cea":"45.57"},{"id":1083,"periodo":"ENERO 2019","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"3586","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"550","precioKwh":"0.5282","reposic":"1.35","cargoFijo":"2.69","energia":"290.51","interes":"2.62","alumbrado":"11.9","subtotal":"309.07","igv":"41.32","totalMes":"270.88","aporte":"3.45","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"310.59","cea":"33.2"},{"id":1084,"periodo":"DICIEMBRE 2018","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"3036","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"416","precioKwh":"0.5072","reposic":"1.35","cargoFijo":"2.69","energia":"211.0","interes":"2.62","alumbrado":"11.9","subtotal":"229.56","igv":"41.32","totalMes":"270.88","aporte":"3.45","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"310.59","cea":"33.2"},{"id":1085,"periodo":"NOVIEMBRE 2018","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"2620","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"385","precioKwh":"0.5057","reposic":"1.33","cargoFijo":"2.64","energia":"194.69","interes":"3.04","alumbrado":"11.55","subtotal":"213.25","igv":"38.39","totalMes":"251.64","aporte":"3.2","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"290.68","cea":"32.0"},{"id":1086,"periodo":"OCTUBRE 2018","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"2235","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"376","precioKwh":"0.5073","reposic":"1.33","cargoFijo":"2.61","energia":"190.74","interes":"3.46","alumbrado":"14.35","subtotal":"212.49","igv":"38.25","totalMes":"250.74","aporte":"3.12","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"289.28","cea":"32.85"},{"id":1087,"periodo":"SEPTIEMBRE 2018","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"1859","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"297","precioKwh":"0.5073","reposic":"1.33","cargoFijo":"2.61","energia":"150.67","interes":"3.86","alumbrado":"12.0","subtotal":"170.47","igv":"30.68","totalMes":"201.15","aporte":"2.47","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"238.64","cea":"29.32"},{"id":1088,"periodo":"AGOSTO 2018","suministro":"0619691","recibo":"—","titular":"CAROCANCHA JULIO","emision":"—","vencimiento":"—","lecActual":"1562","fechaActual":"—","lecAnterior":"—","fechaAnterior":"—","kwh":"285","precioKwh":"0.5076","reposic":"1.33","cargoFijo":"2.61","energia":"144.67","interes":"4.27","alumbrado":"11.0","subtotal":"163.88","igv":"29.5","totalMes":"193.37","aporte":"2.37","mora":"0","redondeoAnt":"0","redondeoAct":"0","total":"230.35","cea":"28.56"}],"individuales":[{"periodo":"DICIEMBRE 2025","persona":"ANDY","lectura":13702,"varLectura":125,"consumoEnergia":77.4,"cea":26.27,"xPagar":34.56},{"periodo":"DICIEMBRE 2025","persona":"WILMER","lectura":18995,"varLectura":169,"consumoEnergia":104.645,"cea":26.27,"xPagar":165.47},{"periodo":"DICIEMBRE 2025","persona":"NOEMI","lectura":14435,"varLectura":190,"consumoEnergia":117.648,"cea":26.27,"xPagar":178.47},{"periodo":"NOVIEMBRE 2025","persona":"ANDY","lectura":13577,"varLectura":147,"consumoEnergia":91.625,"cea":36.33,"xPagar":42.65},{"periodo":"NOVIEMBRE 2025","persona":"WILMER","lectura":18826,"varLectura":158,"consumoEnergia":98.481,"cea":36.33,"xPagar":177.46},{"periodo":"NOVIEMBRE 2025","persona":"NOEMI","lectura":14245,"varLectura":202,"consumoEnergia":125.907,"cea":36.33,"xPagar":204.89},{"periodo":"OCTUBRE 2025","persona":"ANDY","lectura":13430,"varLectura":174,"consumoEnergia":109.568,"cea":38.78,"xPagar":49.45},{"periodo":"OCTUBRE 2025","persona":"WILMER","lectura":18668,"varLectura":180,"consumoEnergia":113.346,"cea":38.78,"xPagar":201.58},{"periodo":"OCTUBRE 2025","persona":"NOEMI","lectura":14043,"varLectura":176,"consumoEnergia":110.827,"cea":38.78,"xPagar":199.06},{"periodo":"SEPTIEMBRE 2025","persona":"ANDY","lectura":13256,"varLectura":120,"consumoEnergia":75.78,"cea":31.05,"xPagar":35.61},{"periodo":"SEPTIEMBRE 2025","persona":"WILMER","lectura":18488,"varLectura":172,"consumoEnergia":108.618,"cea":31.05,"xPagar":175.28},{"periodo":"SEPTIEMBRE 2025","persona":"NOEMI","lectura":13867,"varLectura":193,"consumoEnergia":121.879,"cea":31.05,"xPagar":188.54},{"periodo":"AGOSTO 2025","persona":"ANDY","lectura":13136,"varLectura":161,"consumoEnergia":104.489,"cea":42.16,"xPagar":48.88},{"periodo":"AGOSTO 2025","persona":"WILMER","lectura":18316,"varLectura":209,"consumoEnergia":135.641,"cea":42.16,"xPagar":226.68},{"periodo":"AGOSTO 2025","persona":"NOEMI","lectura":13674,"varLectura":186,"consumoEnergia":120.714,"cea":42.16,"xPagar":211.76},{"periodo":"JULIO 2025","persona":"ANDY","lectura":12975,"varLectura":261,"consumoEnergia":171.816,"cea":40.05,"xPagar":70.62},{"periodo":"JULIO 2025","persona":"WILMER","lectura":18107,"varLectura":182,"consumoEnergia":119.811,"cea":40.05,"xPagar":230.48},{"periodo":"JULIO 2025","persona":"NOEMI","lectura":13488,"varLectura":135,"consumoEnergia":88.87,"cea":40.05,"xPagar":199.54},{"periodo":"JUNIO 2025","persona":"ANDY","lectura":12714,"varLectura":53,"consumoEnergia":34.922,"cea":39.57,"xPagar":24.83},{"periodo":"JUNIO 2025","persona":"WILMER","lectura":17925,"varLectura":318,"consumoEnergia":209.53,"cea":39.57,"xPagar":273.93},{"periodo":"JUNIO 2025","persona":"NOEMI","lectura":13353,"varLectura":213,"consumoEnergia":140.346,"cea":39.57,"xPagar":204.75},{"periodo":"MAYO 2025","persona":"ANDY","lectura":12661,"varLectura":224,"consumoEnergia":148.131,"cea":41.78,"xPagar":63.3},{"periodo":"MAYO 2025","persona":"WILMER","lectura":17607,"varLectura":289,"consumoEnergia":191.116,"cea":41.78,"xPagar":296.2},{"periodo":"MAYO 2025","persona":"NOEMI","lectura":13140,"varLectura":173,"consumoEnergia":114.405,"cea":41.78,"xPagar":219.49},{"periodo":"ABRIL 2025","persona":"ANDY","lectura":12437,"varLectura":154,"consumoEnergia":102.102,"cea":41.97,"xPagar":48.02},{"periodo":"ABRIL 2025","persona":"WILMER","lectura":17318,"varLectura":322,"consumoEnergia":213.486,"cea":41.97,"xPagar":303.48},{"periodo":"ABRIL 2025","persona":"NOEMI","lectura":12967,"varLectura":190,"consumoEnergia":125.97,"cea":41.97,"xPagar":215.96},{"periodo":"MARZO 2025","persona":"ANDY","lectura":12283,"varLectura":230,"consumoEnergia":152.467,"cea":42.44,"xPagar":64.97},{"periodo":"MARZO 2025","persona":"WILMER","lectura":16996,"varLectura":257,"consumoEnergia":170.365,"cea":42.44,"xPagar":277.77},{"periodo":"MARZO 2025","persona":"NOEMI","lectura":12777,"varLectura":149,"consumoEnergia":98.772,"cea":42.44,"xPagar":206.18},{"periodo":"MARZO 2025","persona":"ANDY","lectura":12053,"varLectura":44,"consumoEnergia":29.498,"cea":40.86,"xPagar":23.45},{"periodo":"MARZO 2025","persona":"WILMER","lectura":16739,"varLectura":335,"consumoEnergia":224.584,"cea":40.86,"xPagar":288.9},{"periodo":"MARZO 2025","persona":"NOEMI","lectura":12628,"varLectura":228,"consumoEnergia":152.851,"cea":40.86,"xPagar":217.16},{"periodo":"ENERO 2025","persona":"ANDY","lectura":12009,"varLectura":180,"consumoEnergia":121.356,"cea":41.55,"xPagar":54.3},{"periodo":"ENERO 2025","persona":"WILMER","lectura":16404,"varLectura":207,"consumoEnergia":139.559,"cea":41.55,"xPagar":235.41},{"periodo":"ENERO 2025","persona":"NOEMI","lectura":12400,"varLectura":212,"consumoEnergia":142.93,"cea":41.55,"xPagar":238.78},{"periodo":"DICIEMBRE 2024","persona":"ANDY","lectura":11829,"varLectura":121,"consumoEnergia":81.578,"cea":29.87,"xPagar":37.15},{"periodo":"DICIEMBRE 2024","persona":"WILMER","lectura":16197,"varLectura":194,"consumoEnergia":130.795,"cea":29.87,"xPagar":197.81},{"periodo":"DICIEMBRE 2024","persona":"NOEMI","lectura":12188,"varLectura":181,"consumoEnergia":122.03,"cea":29.87,"xPagar":189.05},{"periodo":"NOVIEMBRE 2024","persona":"ANDY","lectura":11708,"varLectura":118,"consumoEnergia":79.06,"cea":36.72,"xPagar":38.59},{"periodo":"NOVIEMBRE 2024","persona":"WILMER","lectura":16003,"varLectura":192,"consumoEnergia":128.64,"cea":36.72,"xPagar":203.95},{"periodo":"NOVIEMBRE 2024","persona":"NOEMI","lectura":12007,"varLectura":192,"consumoEnergia":128.64,"cea":36.72,"xPagar":203.95},{"periodo":"OCTUBRE 2024","persona":"ANDY","lectura":11590,"varLectura":163,"consumoEnergia":108.9,"cea":30.1,"xPagar":46.33},{"periodo":"OCTUBRE 2024","persona":"WILMER","lectura":15811,"varLectura":148,"consumoEnergia":98.879,"cea":30.1,"xPagar":175.31},{"periodo":"OCTUBRE 2024","persona":"NOEMI","lectura":11815,"varLectura":169,"consumoEnergia":112.909,"cea":30.1,"xPagar":189.34},{"periodo":"SEPTIEMBRE 2024","persona":"ANDY","lectura":11427,"varLectura":128,"consumoEnergia":85.491,"cea":28.93,"xPagar":38.14},{"periodo":"SEPTIEMBRE 2024","persona":"WILMER","lectura":15663,"varLectura":154,"consumoEnergia":102.857,"cea":28.93,"xPagar":169.93},{"periodo":"SEPTIEMBRE 2024","persona":"NOEMI","lectura":11646,"varLectura":163,"consumoEnergia":108.868,"cea":28.93,"xPagar":175.94},{"periodo":"AGOSTO 2024","persona":"ANDY","lectura":11299,"varLectura":125,"consumoEnergia":83.075,"cea":29.86,"xPagar":37.65},{"periodo":"AGOSTO 2024","persona":"WILMER","lectura":15509,"varLectura":131,"consumoEnergia":87.063,"cea":29.86,"xPagar":154.57},{"periodo":"AGOSTO 2024","persona":"NOEMI","lectura":11483,"varLectura":187,"consumoEnergia":124.28,"cea":29.86,"xPagar":191.78},{"periodo":"JULIO 2024","persona":"ANDY","lectura":11174,"varLectura":133,"consumoEnergia":88.849,"cea":27.8,"xPagar":38.88},{"periodo":"JULIO 2024","persona":"WILMER","lectura":15378,"varLectura":125,"consumoEnergia":82.888,"cea":27.8,"xPagar":149.57},{"periodo":"JULIO 2024","persona":"NOEMI","lectura":11296,"varLectura":182,"consumoEnergia":120.691,"cea":27.8,"xPagar":187.37},{"periodo":"JUNIO 2024","persona":"ANDY","lectura":11040,"varLectura":125,"consumoEnergia":82.894,"cea":28.56,"xPagar":37.15},{"periodo":"JUNIO 2024","persona":"WILMER","lectura":15253,"varLectura":151,"consumoEnergia":100.128,"cea":28.56,"xPagar":165.84},{"periodo":"JUNIO 2024","persona":"NOEMI","lectura":11113,"varLectura":193,"consumoEnergia":128.635,"cea":28.56,"xPagar":194.35},{"periodo":"MAYO 2024","persona":"ANDY","lectura":10915,"varLectura":145,"consumoEnergia":96.469,"cea":36.96,"xPagar":44.48},{"periodo":"MAYO 2024","persona":"WILMER","lectura":15102,"varLectura":194,"consumoEnergia":129.068,"cea":36.96,"xPagar":210.5},{"periodo":"MAYO 2024","persona":"NOEMI","lectura":10920,"varLectura":186,"consumoEnergia":123.746,"cea":36.96,"xPagar":205.18},{"periodo":"MAYO 2024","persona":"ANDY","lectura":10770,"varLectura":155,"consumoEnergia":103.416,"cea":38.01,"xPagar":47.14},{"periodo":"MAYO 2024","persona":"WILMER","lectura":14908,"varLectura":218,"consumoEnergia":145.45,"cea":38.01,"xPagar":230.6},{"periodo":"MAYO 2024","persona":"NOEMI","lectura":10734,"varLectura":189,"consumoEnergia":126.101,"cea":38.01,"xPagar":211.25},{"periodo":"MARZO 2024","persona":"ANDY","lectura":10615,"varLectura":153,"consumoEnergia":102.082,"cea":35.02,"xPagar":45.7},{"periodo":"MARZO 2024","persona":"WILMER","lectura":14690,"varLectura":195,"consumoEnergia":130.104,"cea":35.02,"xPagar":210.82},{"periodo":"MARZO 2024","persona":"NOEMI","lectura":10545,"varLectura":184,"consumoEnergia":122.765,"cea":35.02,"xPagar":203.49},{"periodo":"FEBRERO 2024","persona":"ANDY","lectura":10462,"varLectura":180,"consumoEnergia":121.14,"cea":38.53,"xPagar":53.22},{"periodo":"FEBRERO 2024","persona":"WILMER","lectura":14495,"varLectura":148,"consumoEnergia":99.604,"cea":38.53,"xPagar":191.36},{"periodo":"FEBRERO 2024","persona":"NOEMI","lectura":10361,"varLectura":212,"consumoEnergia":142.676,"cea":38.53,"xPagar":234.43},{"periodo":"ENERO 2024","persona":"ANDY","lectura":10282,"varLectura":132,"consumoEnergia":89.206,"cea":40.55,"xPagar":43.25},{"periodo":"ENERO 2024","persona":"WILMER","lectura":14347,"varLectura":166,"consumoEnergia":112.183,"cea":40.55,"xPagar":195.99},{"periodo":"ENERO 2024","persona":"NOEMI","lectura":10149,"varLectura":254,"consumoEnergia":171.653,"cea":40.55,"xPagar":255.45},{"periodo":"DICIEMBRE 2023","persona":"ANDY","lectura":10150,"varLectura":108,"consumoEnergia":73.105,"cea":27.34,"xPagar":33.48},{"periodo":"DICIEMBRE 2023","persona":"WILMER","lectura":14181,"varLectura":135,"consumoEnergia":91.381,"cea":27.34,"xPagar":152.2},{"periodo":"DICIEMBRE 2023","persona":"NOEMI","lectura":9895,"varLectura":178,"consumoEnergia":120.488,"cea":27.34,"xPagar":181.31},{"periodo":"NOVIEMBRE 2023","persona":"ANDY","lectura":10042,"varLectura":133,"consumoEnergia":87.088,"cea":26.69,"xPagar":37.93},{"periodo":"NOVIEMBRE 2023","persona":"WILMER","lectura":14046,"varLectura":127,"consumoEnergia":83.16,"cea":26.69,"xPagar":147.78},{"periodo":"NOVIEMBRE 2023","persona":"NOEMI","lectura":9717,"varLectura":182,"consumoEnergia":119.174,"cea":26.69,"xPagar":183.79},{"periodo":"OCTUBRE 2023","persona":"ANDY","lectura":9909,"varLectura":84,"consumoEnergia":53.928,"cea":24.37,"xPagar":26.1},{"periodo":"OCTUBRE 2023","persona":"WILMER","lectura":13919,"varLectura":115,"consumoEnergia":73.83,"cea":24.37,"xPagar":124.3},{"periodo":"OCTUBRE 2023","persona":"NOEMI","lectura":9535,"varLectura":170,"consumoEnergia":109.14,"cea":24.37,"xPagar":159.61},{"periodo":"SEPTIEMBRE 2023","persona":"ANDY","lectura":9825,"varLectura":136,"consumoEnergia":87.054,"cea":26.83,"xPagar":37.96},{"periodo":"SEPTIEMBRE 2023","persona":"WILMER","lectura":13804,"varLectura":125,"consumoEnergia":80.013,"cea":26.83,"xPagar":144.8},{"periodo":"SEPTIEMBRE 2023","persona":"NOEMI","lectura":9365,"varLectura":178,"consumoEnergia":113.938,"cea":26.83,"xPagar":178.73},{"periodo":"AGOSTO 2023","persona":"ANDY","lectura":9689,"varLectura":97,"consumoEnergia":64.359,"cea":37.37,"xPagar":33.91},{"periodo":"AGOSTO 2023","persona":"WILMER","lectura":13679,"varLectura":227,"consumoEnergia":150.614,"cea":37.37,"xPagar":221.89},{"periodo":"AGOSTO 2023","persona":"NOEMI","lectura":9187,"varLectura":180,"consumoEnergia":119.43,"cea":37.37,"xPagar":190.71},{"periodo":"JULIO 2023","persona":"ANDY","lectura":9592,"varLectura":227,"consumoEnergia":152.953,"cea":29.64,"xPagar":60.86},{"periodo":"JULIO 2023","persona":"WILMER","lectura":13452,"varLectura":337,"consumoEnergia":227.071,"cea":29.64,"xPagar":317.58},{"periodo":"JULIO 2023","persona":"NOEMI","lectura":9007,"varLectura":387,"consumoEnergia":260.761,"cea":29.64,"xPagar":351.27},{"periodo":"MAYO 2023","persona":"ANDY","lectura":9365,"varLectura":178,"consumoEnergia":121.467,"cea":31.09,"xPagar":50.85},{"periodo":"MAYO 2023","persona":"WILMER","lectura":13115,"varLectura":146,"consumoEnergia":99.63,"cea":31.09,"xPagar":181.57},{"periodo":"MAYO 2023","persona":"NOEMI","lectura":8620,"varLectura":173,"consumoEnergia":118.055,"cea":31.09,"xPagar":200.0},{"periodo":"ABRIL 2023","persona":"ANDY","lectura":9187,"varLectura":142,"consumoEnergia":98.278,"cea":42.69,"xPagar":46.99},{"periodo":"ABRIL 2023","persona":"WILMER","lectura":12969,"varLectura":241,"consumoEnergia":166.796,"cea":42.69,"xPagar":256.48},{"periodo":"ABRIL 2023","persona":"NOEMI","lectura":8447,"varLectura":200,"consumoEnergia":138.42,"cea":42.69,"xPagar":228.1},{"periodo":"MARZO 2023","persona":"ANDY","lectura":9045,"varLectura":205,"consumoEnergia":142.352,"cea":43.41,"xPagar":61.92},{"periodo":"MARZO 2023","persona":"WILMER","lectura":12728,"varLectura":291,"consumoEnergia":202.07,"cea":43.41,"xPagar":307.4},{"periodo":"MARZO 2023","persona":"NOEMI","lectura":8247,"varLectura":184,"consumoEnergia":127.77,"cea":43.41,"xPagar":233.1},{"periodo":"ENERO 2023","persona":"ANDY","lectura":8840,"varLectura":177,"consumoEnergia":127.104,"cea":50.63,"xPagar":59.24},{"periodo":"ENERO 2023","persona":"WILMER","lectura":12437,"varLectura":387,"consumoEnergia":277.905,"cea":50.63,"xPagar":387.78},{"periodo":"ENERO 2023","persona":"NOEMI","lectura":8063,"varLectura":193,"consumoEnergia":138.593,"cea":50.63,"xPagar":248.47},{"periodo":"DICIEMBRE 2022","persona":"ANDY","lectura":8663,"varLectura":127,"consumoEnergia":92.634,"cea":48.0,"xPagar":46.88},{"periodo":"DICIEMBRE 2022","persona":"WILMER","lectura":12050,"varLectura":318,"consumoEnergia":231.949,"cea":48.0,"xPagar":326.83},{"periodo":"DICIEMBRE 2022","persona":"NOEMI","lectura":7870,"varLectura":202,"consumoEnergia":147.339,"cea":48.0,"xPagar":242.22},{"periodo":"NOVIEMBRE 2022","persona":"ANDY","lectura":8536,"varLectura":124,"consumoEnergia":90.545,"cea":43.38,"xPagar":44.64},{"periodo":"NOVIEMBRE 2022","persona":"WILMER","lectura":11732,"varLectura":265,"consumoEnergia":193.503,"cea":43.38,"xPagar":281.52},{"periodo":"NOVIEMBRE 2022","persona":"NOEMI","lectura":7668,"varLectura":173,"consumoEnergia":126.325,"cea":43.38,"xPagar":214.35},{"periodo":"DICIEMBRE 2022","persona":"ANDY","lectura":8412,"varLectura":133,"consumoEnergia":92.98,"cea":43.35,"xPagar":45.44},{"periodo":"DICIEMBRE 2022","persona":"WILMER","lectura":11467,"varLectura":305,"consumoEnergia":213.226,"cea":43.35,"xPagar":302.02},{"periodo":"DICIEMBRE 2022","persona":"NOEMI","lectura":7495,"varLectura":157,"consumoEnergia":109.759,"cea":43.35,"xPagar":198.55},{"periodo":"OCTUBRE 2022","persona":"ANDY","lectura":8279,"varLectura":242,"consumoEnergia":164.85,"cea":42.8,"xPagar":69.22},{"periodo":"OCTUBRE 2022","persona":"WILMER","lectura":11162,"varLectura":229,"consumoEnergia":155.995,"cea":42.8,"xPagar":268.02},{"periodo":"OCTUBRE 2022","persona":"NOEMI","lectura":7338,"varLectura":142,"consumoEnergia":96.73,"cea":42.8,"xPagar":208.75},{"periodo":"SEPTIEMBRE 2022","persona":"ANDY","lectura":8037,"varLectura":46,"consumoEnergia":31.275,"cea":38.89,"xPagar":23.39},{"periodo":"SEPTIEMBRE 2022","persona":"WILMER","lectura":10933,"varLectura":271,"consumoEnergia":184.253,"cea":38.89,"xPagar":246.53},{"periodo":"SEPTIEMBRE 2022","persona":"NOEMI","lectura":7196,"varLectura":199,"consumoEnergia":135.3,"cea":38.89,"xPagar":197.58},{"periodo":"AGOSTO 2022","persona":"ANDY","lectura":7991,"varLectura":149,"consumoEnergia":98.966,"cea":-8.88,"xPagar":30.03},{"periodo":"AGOSTO 2022","persona":"WILMER","lectura":10662,"varLectura":226,"consumoEnergia":150.109,"cea":-8.88,"xPagar":171.25},{"periodo":"AGOSTO 2022","persona":"NOEMI","lectura":6997,"varLectura":171,"consumoEnergia":113.578,"cea":-8.88,"xPagar":134.72},{"periodo":"JULIO 2022","persona":"ANDY","lectura":7842,"varLectura":137,"consumoEnergia":89.872,"cea":43.98,"xPagar":44.62},{"periodo":"JULIO 2022","persona":"WILMER","lectura":10436,"varLectura":342,"consumoEnergia":224.352,"cea":43.98,"xPagar":312.95},{"periodo":"JULIO 2022","persona":"NOEMI","lectura":6826,"varLectura":172,"consumoEnergia":112.832,"cea":43.98,"xPagar":201.43},{"periodo":"JUNIO 2022","persona":"ANDY","lectura":7705,"varLectura":154,"consumoEnergia":100.808,"cea":48.62,"xPagar":49.81},{"periodo":"JUNIO 2022","persona":"WILMER","lectura":10094,"varLectura":438,"consumoEnergia":286.715,"cea":48.62,"xPagar":385.14},{"periodo":"JUNIO 2022","persona":"NOEMI","lectura":6654,"varLectura":176,"consumoEnergia":115.21,"cea":48.62,"xPagar":213.64},{"periodo":"MAYO 2022","persona":"ANDY","lectura":7551,"varLectura":153,"consumoEnergia":99.771,"cea":42.92,"xPagar":47.57},{"periodo":"MAYO 2022","persona":"WILMER","lectura":9656,"varLectura":338,"consumoEnergia":220.41,"cea":42.92,"xPagar":310.9},{"periodo":"MAYO 2022","persona":"NOEMI","lectura":6478,"varLectura":191,"consumoEnergia":124.551,"cea":42.92,"xPagar":215.04},{"periodo":"ABRIL 2022","persona":"ANDY","lectura":7398,"varLectura":83,"consumoEnergia":53.991,"cea":10.74,"xPagar":21.58},{"periodo":"ABRIL 2022","persona":"WILMER","lectura":9318,"varLectura":267,"consumoEnergia":173.684,"cea":10.74,"xPagar":206.0},{"periodo":"ABRIL 2022","persona":"NOEMI","lectura":6287,"varLectura":183,"consumoEnergia":119.041,"cea":10.74,"xPagar":151.36},{"periodo":"MARZO 2022","persona":"ANDY","lectura":7315,"varLectura":209,"consumoEnergia":135.829,"cea":38.64,"xPagar":58.15},{"periodo":"MARZO 2022","persona":"WILMER","lectura":9051,"varLectura":213,"consumoEnergia":138.429,"cea":38.64,"xPagar":235.22},{"periodo":"MARZO 2022","persona":"NOEMI","lectura":6104,"varLectura":169,"consumoEnergia":109.833,"cea":38.64,"xPagar":206.62},{"periodo":"FEBRERO 2022","persona":"ANDY","lectura":7106,"varLectura":86,"consumoEnergia":55.651,"cea":37.8,"xPagar":31.15},{"periodo":"FEBRERO 2022","persona":"WILMER","lectura":8838,"varLectura":274,"consumoEnergia":177.305,"cea":37.8,"xPagar":246.25},{"periodo":"FEBRERO 2022","persona":"NOEMI","lectura":5935,"varLectura":188,"consumoEnergia":121.655,"cea":37.8,"xPagar":190.6},{"periodo":"ENERO 2022","persona":"ANDY","lectura":7020,"varLectura":172,"consumoEnergia":111.078,"cea":37.37,"xPagar":49.48},{"periodo":"ENERO 2022","persona":"WILMER","lectura":8564,"varLectura":276,"consumoEnergia":178.241,"cea":37.37,"xPagar":265.09},{"periodo":"ENERO 2022","persona":"NOEMI","lectura":5747,"varLectura":124,"consumoEnergia":80.079,"cea":37.37,"xPagar":166.93},{"periodo":"DICIEMBRE 2021","persona":"ANDY","lectura":6848,"varLectura":149,"consumoEnergia":96.075,"cea":26.57,"xPagar":40.88},{"periodo":"DICIEMBRE 2021","persona":"WILMER","lectura":8288,"varLectura":222,"consumoEnergia":143.146,"cea":26.57,"xPagar":210.6},{"periodo":"DICIEMBRE 2021","persona":"NOEMI","lectura":5623,"varLectura":104,"consumoEnergia":67.059,"cea":26.57,"xPagar":134.51},{"periodo":"NOVIEMBRE 2021","persona":"ANDY","lectura":6699,"varLectura":170,"consumoEnergia":109.973,"cea":23.46,"xPagar":44.48},{"periodo":"NOVIEMBRE 2021","persona":"WILMER","lectura":8066,"varLectura":221,"consumoEnergia":142.965,"cea":23.46,"xPagar":210.9},{"periodo":"NOVIEMBRE 2021","persona":"NOEMI","lectura":5519,"varLectura":100,"consumoEnergia":64.69,"cea":23.46,"xPagar":132.62},{"periodo":"OCTUBRE 2021","persona":"ANDY","lectura":6529,"varLectura":170,"consumoEnergia":107.151,"cea":26.74,"xPagar":44.63},{"periodo":"OCTUBRE 2021","persona":"WILMER","lectura":7845,"varLectura":194,"consumoEnergia":122.278,"cea":26.74,"xPagar":193.64},{"periodo":"OCTUBRE 2021","persona":"NOEMI","lectura":5419,"varLectura":91,"consumoEnergia":57.357,"cea":26.74,"xPagar":128.72},{"periodo":"SEPTIEMBRE 2021","persona":"ANDY","lectura":6359,"varLectura":201,"consumoEnergia":123.293,"cea":37.13,"xPagar":53.47},{"periodo":"SEPTIEMBRE 2021","persona":"WILMER","lectura":7651,"varLectura":223,"consumoEnergia":136.788,"cea":37.13,"xPagar":227.39},{"periodo":"SEPTIEMBRE 2021","persona":"NOEMI","lectura":5328,"varLectura":115,"consumoEnergia":70.541,"cea":37.13,"xPagar":161.14},{"periodo":"AGOSTO 2021","persona":"ANDY","lectura":6158,"varLectura":170,"consumoEnergia":101.575,"cea":37.84,"xPagar":46.47},{"periodo":"AGOSTO 2021","persona":"WILMER","lectura":7428,"varLectura":202,"consumoEnergia":120.695,"cea":37.84,"xPagar":205.01},{"periodo":"AGOSTO 2021","persona":"NOEMI","lectura":5213,"varLectura":115,"consumoEnergia":68.713,"cea":37.84,"xPagar":153.02},{"periodo":"JULIO 2021","persona":"ANDY","lectura":5988,"varLectura":259,"consumoEnergia":151.904,"cea":35.21,"xPagar":62.37},{"periodo":"JULIO 2021","persona":"WILMER","lectura":7226,"varLectura":156,"consumoEnergia":91.494,"cea":35.21,"xPagar":189.08},{"periodo":"JULIO 2021","persona":"NOEMI","lectura":5098,"varLectura":92,"consumoEnergia":53.958,"cea":35.21,"xPagar":151.54},{"periodo":"JUNIO 2021","persona":"ANDY","lectura":5729,"varLectura":122,"consumoEnergia":70.919,"cea":33.43,"xPagar":34.78},{"periodo":"JUNIO 2021","persona":"WILMER","lectura":7070,"varLectura":254,"consumoEnergia":147.65,"cea":33.43,"xPagar":215.86},{"periodo":"JUNIO 2021","persona":"NOEMI","lectura":5006,"varLectura":137,"consumoEnergia":79.638,"cea":33.43,"xPagar":147.85},{"periodo":"MAYO 2021","persona":"ANDY","lectura":5607,"varLectura":190,"consumoEnergia":112.233,"cea":33.33,"xPagar":48.52},{"periodo":"MAYO 2021","persona":"WILMER","lectura":6816,"varLectura":216,"consumoEnergia":127.591,"cea":33.33,"xPagar":209.44},{"periodo":"MAYO 2021","persona":"NOEMI","lectura":4869,"varLectura":129,"consumoEnergia":76.2,"cea":33.33,"xPagar":158.05},{"periodo":"ABRIL 2021","persona":"ANDY","lectura":5417,"varLectura":208,"consumoEnergia":123.718,"cea":36.06,"xPagar":53.26},{"periodo":"ABRIL 2021","persona":"WILMER","lectura":6600,"varLectura":294,"consumoEnergia":174.871,"cea":36.06,"xPagar":264.2},{"periodo":"ABRIL 2021","persona":"NOEMI","lectura":4740,"varLectura":118,"consumoEnergia":70.186,"cea":36.06,"xPagar":159.51},{"periodo":"MARZO 2021","persona":"ANDY","lectura":5209,"varLectura":256,"consumoEnergia":151.296,"cea":34.62,"xPagar":61.97},{"periodo":"MARZO 2021","persona":"WILMER","lectura":6306,"varLectura":234,"consumoEnergia":138.294,"cea":34.62,"xPagar":234.88},{"periodo":"MARZO 2021","persona":"NOEMI","lectura":4622,"varLectura":105,"consumoEnergia":62.055,"cea":34.62,"xPagar":158.64},{"periodo":"FEBRERO 2021","persona":"ANDY","lectura":4953,"varLectura":153,"consumoEnergia":90.545,"cea":33.36,"xPagar":41.3},{"periodo":"FEBRERO 2021","persona":"WILMER","lectura":6072,"varLectura":285,"consumoEnergia":168.663,"cea":33.36,"xPagar":243.33},{"periodo":"FEBRERO 2021","persona":"NOEMI","lectura":4517,"varLectura":117,"consumoEnergia":69.241,"cea":33.36,"xPagar":143.91},{"periodo":"ENERO 2021","persona":"ANDY","lectura":4800,"varLectura":189,"consumoEnergia":111.85,"cea":35.34,"xPagar":49.06},{"periodo":"ENERO 2021","persona":"WILMER","lectura":5787,"varLectura":250,"consumoEnergia":147.95,"cea":35.34,"xPagar":232.35},{"periodo":"ENERO 2021","persona":"NOEMI","lectura":4400,"varLectura":149,"consumoEnergia":88.178,"cea":35.34,"xPagar":172.58},{"periodo":"DICIEMBRE 2020","persona":"ANDY","lectura":4611,"varLectura":105,"consumoEnergia":62.118,"cea":25.09,"xPagar":29.07},{"periodo":"DICIEMBRE 2020","persona":"WILMER","lectura":5537,"varLectura":199,"consumoEnergia":117.728,"cea":25.09,"xPagar":171.88},{"periodo":"DICIEMBRE 2020","persona":"NOEMI","lectura":4251,"varLectura":168,"consumoEnergia":99.389,"cea":25.09,"xPagar":153.54},{"periodo":"NOVIEMBRE 2020","persona":"ANDY","lectura":4506,"varLectura":104,"consumoEnergia":60.299,"cea":24.09,"xPagar":28.13},{"periodo":"NOVIEMBRE 2020","persona":"WILMER","lectura":5338,"varLectura":206,"consumoEnergia":119.439,"cea":24.09,"xPagar":171.66},{"periodo":"NOVIEMBRE 2020","persona":"NOEMI","lectura":4083,"varLectura":144,"consumoEnergia":83.491,"cea":24.09,"xPagar":135.71},{"periodo":"OCTUBRE 2020","persona":"ANDY","lectura":4402,"varLectura":127,"consumoEnergia":72.682,"cea":21.15,"xPagar":31.28},{"periodo":"OCTUBRE 2020","persona":"WILMER","lectura":5132,"varLectura":187,"consumoEnergia":107.02,"cea":21.15,"xPagar":159.45},{"periodo":"OCTUBRE 2020","persona":"NOEMI","lectura":3939,"varLectura":136,"consumoEnergia":77.833,"cea":21.15,"xPagar":130.27},{"periodo":"SEPTIEMBRE 2020","persona":"ANDY","lectura":4275,"varLectura":197,"consumoEnergia":112.605,"cea":24.47,"xPagar":45.69},{"periodo":"SEPTIEMBRE 2020","persona":"WILMER","lectura":4945,"varLectura":139,"consumoEnergia":79.452,"cea":24.47,"xPagar":149.62},{"periodo":"SEPTIEMBRE 2020","persona":"NOEMI","lectura":3803,"varLectura":105,"consumoEnergia":60.018,"cea":24.47,"xPagar":130.18},{"periodo":"AGOSTO 2020","persona":"ANDY","lectura":4078,"varLectura":37,"consumoEnergia":20.879,"cea":23.51,"xPagar":14.8},{"periodo":"AGOSTO 2020","persona":"WILMER","lectura":4806,"varLectura":216,"consumoEnergia":121.889,"cea":23.51,"xPagar":160.2},{"periodo":"AGOSTO 2020","persona":"NOEMI","lectura":3698,"varLectura":174,"consumoEnergia":98.188,"cea":23.51,"xPagar":136.5},{"periodo":"JULIO 2020","persona":"ANDY","lectura":4041,"varLectura":123,"consumoEnergia":68.609,"cea":24.39,"xPagar":31.0},{"periodo":"JULIO 2020","persona":"WILMER","lectura":4590,"varLectura":194,"consumoEnergia":108.213,"cea":24.39,"xPagar":163.6},{"periodo":"JULIO 2020","persona":"NOEMI","lectura":3524,"varLectura":130,"consumoEnergia":72.514,"cea":24.39,"xPagar":127.9},{"periodo":"JUNIO 2020","persona":"ANDY","lectura":3918,"varLectura":222,"consumoEnergia":118.659,"cea":44.87,"xPagar":54.51},{"periodo":"JUNIO 2020","persona":"WILMER","lectura":4396,"varLectura":213,"consumoEnergia":113.849,"cea":44.87,"xPagar":213.23},{"periodo":"JUNIO 2020","persona":"NOEMI","lectura":3394,"varLectura":127,"consumoEnergia":67.882,"cea":44.87,"xPagar":167.26},{"periodo":"MAYO 2020","persona":"ANDY","lectura":3696,"varLectura":128,"consumoEnergia":70.067,"cea":22.82,"xPagar":30.96},{"periodo":"MAYO 2020","persona":"WILMER","lectura":4183,"varLectura":225,"consumoEnergia":123.165,"cea":22.82,"xPagar":176.95},{"periodo":"MAYO 2020","persona":"NOEMI","lectura":3267,"varLectura":133,"consumoEnergia":72.804,"cea":22.82,"xPagar":126.59},{"periodo":"ABRIL 2020","persona":"ANDY","lectura":3568,"varLectura":69,"consumoEnergia":37.771,"cea":28.47,"xPagar":22.08},{"periodo":"ABRIL 2020","persona":"WILMER","lectura":3958,"varLectura":287,"consumoEnergia":157.104,"cea":28.47,"xPagar":207.65},{"periodo":"ABRIL 2020","persona":"NOEMI","lectura":3134,"varLectura":184,"consumoEnergia":100.722,"cea":28.47,"xPagar":151.27},{"periodo":"MARZO 2020","persona":"ANDY","lectura":3499,"varLectura":170,"consumoEnergia":93.058,"cea":30.07,"xPagar":41.04},{"periodo":"MARZO 2020","persona":"WILMER","lectura":3671,"varLectura":246,"consumoEnergia":134.66,"cea":30.07,"xPagar":205.77},{"periodo":"MARZO 2020","persona":"NOEMI","lectura":2950,"varLectura":128,"consumoEnergia":70.067,"cea":30.07,"xPagar":141.18},{"periodo":"FEBRERO 2020","persona":"ANDY","lectura":3329,"varLectura":240,"consumoEnergia":132.312,"cea":30.49,"xPagar":54.27},{"periodo":"FEBRERO 2020","persona":"WILMER","lectura":3425,"varLectura":187,"consumoEnergia":103.093,"cea":30.49,"xPagar":187.85},{"periodo":"FEBRERO 2020","persona":"NOEMI","lectura":2822,"varLectura":111,"consumoEnergia":61.194,"cea":30.49,"xPagar":145.95},{"periodo":"ENERO 2020","persona":"ANDY","lectura":3089,"varLectura":66,"consumoEnergia":36.505,"cea":30.03,"xPagar":22.18},{"periodo":"ENERO 2020","persona":"WILMER","lectura":3238,"varLectura":277,"consumoEnergia":153.209,"cea":30.03,"xPagar":205.42},{"periodo":"ENERO 2020","persona":"NOEMI","lectura":2711,"varLectura":171,"consumoEnergia":94.58,"cea":30.03,"xPagar":146.79},{"periodo":"DICIEMBRE 2019","persona":"ANDY","lectura":3023,"varLectura":119,"consumoEnergia":64.7,"cea":23.75,"xPagar":29.48},{"periodo":"DICIEMBRE 2019","persona":"WILMER","lectura":2961,"varLectura":182,"consumoEnergia":98.953,"cea":23.75,"xPagar":152.19},{"periodo":"DICIEMBRE 2019","persona":"NOEMI","lectura":2540,"varLectura":140,"consumoEnergia":76.118,"cea":23.75,"xPagar":129.36},{"periodo":"NOVIEMBRE 2019","persona":"ANDY","lectura":2904,"varLectura":164,"consumoEnergia":89.167,"cea":30.67,"xPagar":39.94},{"periodo":"NOVIEMBRE 2019","persona":"WILMER","lectura":2779,"varLectura":228,"consumoEnergia":123.964,"cea":30.67,"xPagar":194.57},{"periodo":"NOVIEMBRE 2019","persona":"NOEMI","lectura":2400,"varLectura":118,"consumoEnergia":64.157,"cea":30.67,"xPagar":134.77},{"periodo":"OCTUBRE 2019","persona":"ANDY","lectura":2740,"varLectura":108,"consumoEnergia":57.175,"cea":22.74,"xPagar":26.64},{"periodo":"OCTUBRE 2019","persona":"WILMER","lectura":2551,"varLectura":211,"consumoEnergia":111.703,"cea":22.74,"xPagar":161.09},{"periodo":"OCTUBRE 2019","persona":"NOEMI","lectura":2282,"varLectura":126,"consumoEnergia":66.704,"cea":22.74,"xPagar":116.09},{"periodo":"SEPTIEMBRE 2019","persona":"ANDY","lectura":2632,"varLectura":125,"consumoEnergia":65.463,"cea":22.23,"xPagar":29.23},{"periodo":"SEPTIEMBRE 2019","persona":"WILMER","lectura":2340,"varLectura":166,"consumoEnergia":86.934,"cea":22.23,"xPagar":138.39},{"periodo":"SEPTIEMBRE 2019","persona":"NOEMI","lectura":2156,"varLectura":111,"consumoEnergia":58.131,"cea":22.23,"xPagar":109.59},{"periodo":"AGOSTO 2019","persona":"ANDY","lectura":2507,"varLectura":145,"consumoEnergia":76.995,"cea":23.44,"xPagar":33.48},{"periodo":"AGOSTO 2019","persona":"WILMER","lectura":2174,"varLectura":178,"consumoEnergia":94.518,"cea":23.44,"xPagar":151.44},{"periodo":"AGOSTO 2019","persona":"NOEMI","lectura":2045,"varLectura":109,"consumoEnergia":57.879,"cea":23.44,"xPagar":114.8},{"periodo":"JULIO 2019","persona":"ANDY","lectura":2362,"varLectura":191,"consumoEnergia":101.898,"cea":22.33,"xPagar":41.41},{"periodo":"JULIO 2019","persona":"WILMER","lectura":1996,"varLectura":142,"consumoEnergia":75.757,"cea":22.33,"xPagar":139.49},{"periodo":"JULIO 2019","persona":"NOEMI","lectura":1936,"varLectura":73,"consumoEnergia":38.946,"cea":22.33,"xPagar":102.68},{"periodo":"JUNIO 2019","persona":"ANDY","lectura":2171,"varLectura":19,"consumoEnergia":10.131,"cea":20.59,"xPagar":10.24},{"periodo":"JUNIO 2019","persona":"WILMER","lectura":1854,"varLectura":215,"consumoEnergia":114.638,"cea":20.59,"xPagar":145.47},{"periodo":"JUNIO 2019","persona":"NOEMI","lectura":1863,"varLectura":154,"consumoEnergia":82.113,"cea":20.59,"xPagar":112.94},{"periodo":"MAYO 2019","persona":"ANDY","lectura":2152,"varLectura":154,"consumoEnergia":82.19,"cea":35.3,"xPagar":39.16},{"periodo":"MAYO 2019","persona":"WILMER","lectura":1639,"varLectura":165,"consumoEnergia":88.06,"cea":35.3,"xPagar":162.52},{"periodo":"MAYO 2019","persona":"NOEMI","lectura":1709,"varLectura":130,"consumoEnergia":69.381,"cea":35.3,"xPagar":143.84},{"periodo":"ABRIL 2019","persona":"ANDY","lectura":1998,"varLectura":89,"consumoEnergia":47.535,"cea":35.78,"xPagar":27.77},{"periodo":"ABRIL 2019","persona":"WILMER","lectura":1474,"varLectura":187,"consumoEnergia":99.877,"cea":35.78,"xPagar":163.43},{"periodo":"ABRIL 2019","persona":"NOEMI","lectura":1579,"varLectura":158,"consumoEnergia":84.388,"cea":35.78,"xPagar":147.94},{"periodo":"MARZO 2019","persona":"ANDY","lectura":1909,"varLectura":251,"consumoEnergia":134.26,"cea":41.9,"xPagar":58.72},{"periodo":"MARZO 2019","persona":"WILMER","lectura":1287,"varLectura":157,"consumoEnergia":83.979,"cea":41.9,"xPagar":184.61},{"periodo":"MARZO 2019","persona":"NOEMI","lectura":1421,"varLectura":110,"consumoEnergia":58.839,"cea":41.9,"xPagar":159.47},{"periodo":"FEBRERO 2019","persona":"ANDY","lectura":1658,"varLectura":23,"consumoEnergia":12.149,"cea":45.57,"xPagar":19.24},{"periodo":"FEBRERO 2019","persona":"WILMER","lectura":1130,"varLectura":285,"consumoEnergia":150.537,"cea":45.57,"xPagar":215.34},{"periodo":"FEBRERO 2019","persona":"NOEMI","lectura":1311,"varLectura":205,"consumoEnergia":108.281,"cea":45.57,"xPagar":173.09},{"periodo":"ENERO 2019","persona":"ANDY","lectura":1635,"varLectura":146,"consumoEnergia":77.117,"cea":33.2,"xPagar":36.77},{"periodo":"ENERO 2019","persona":"WILMER","lectura":845,"varLectura":232,"consumoEnergia":122.542,"cea":33.2,"xPagar":192.51},{"periodo":"ENERO 2019","persona":"NOEMI","lectura":1106,"varLectura":172,"consumoEnergia":90.85,"cea":33.2,"xPagar":160.82},{"periodo":"DICIEMBRE 2018","persona":"ANDY","lectura":1489,"varLectura":85,"consumoEnergia":43.112,"cea":33.2,"xPagar":25.44},{"periodo":"DICIEMBRE 2018","persona":"WILMER","lectura":613,"varLectura":180,"consumoEnergia":91.296,"cea":33.2,"xPagar":149.93},{"periodo":"DICIEMBRE 2018","persona":"NOEMI","lectura":934,"varLectura":151,"consumoEnergia":76.587,"cea":33.2,"xPagar":135.22},{"periodo":"NOVIEMBRE 2018","persona":"ANDY","lectura":1404,"varLectura":101,"consumoEnergia":51.076,"cea":32.0,"xPagar":27.69},{"periodo":"NOVIEMBRE 2018","persona":"WILMER","lectura":433,"varLectura":141,"consumoEnergia":71.304,"cea":32.0,"xPagar":130.99},{"periodo":"NOVIEMBRE 2018","persona":"NOEMI","lectura":783,"varLectura":143,"consumoEnergia":72.315,"cea":32.0,"xPagar":132.0},{"periodo":"OCTUBRE 2018","persona":"ANDY","lectura":1303,"varLectura":152,"consumoEnergia":77.11,"cea":32.85,"xPagar":36.65},{"periodo":"OCTUBRE 2018","persona":"WILMER","lectura":292,"varLectura":95,"consumoEnergia":48.194,"cea":32.85,"xPagar":117.69},{"periodo":"OCTUBRE 2018","persona":"NOEMI","lectura":640,"varLectura":129,"consumoEnergia":65.442,"cea":32.85,"xPagar":134.94},{"periodo":"SEPTIEMBRE 2018","persona":"ANDY","lectura":1151,"varLectura":110,"consumoEnergia":55.803,"cea":29.32,"xPagar":28.38},{"periodo":"SEPTIEMBRE 2018","persona":"WILMER","lectura":197,"varLectura":60,"consumoEnergia":30.438,"cea":29.32,"xPagar":88.14},{"periodo":"SEPTIEMBRE 2018","persona":"NOEMI","lectura":511,"varLectura":127,"consumoEnergia":64.427,"cea":29.32,"xPagar":122.13},{"periodo":"AGOSTO 2018","persona":"ANDY","lectura":1041,"varLectura":132,"consumoEnergia":67.003,"cea":28.56,"xPagar":31.86},{"periodo":"AGOSTO 2018","persona":"WILMER","lectura":137,"varLectura":70,"consumoEnergia":35.532,"cea":28.56,"xPagar":95.95},{"periodo":"AGOSTO 2018","persona":"NOEMI","lectura":384,"varLectura":83,"consumoEnergia":42.131,"cea":28.56,"xPagar":102.55}]};
+
+const S={fmt:[...BUILTIN.recibos],ind:[...BUILTIN.individuales],pdfOk:false,xlsOk:false,calc:null};
+
+function goTab(name,btn){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  btn.classList.add('on');
+  if(name==='per') renderPer();
+  if(name==='hist') renderHist();
+}
+
+function setupDrop(zid,fid,ext,cb){
+  const z=document.getElementById(zid),f=document.getElementById(fid);
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag')});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');const fl=e.dataTransfer.files[0];if(fl&&fl.name.toLowerCase().endsWith(ext))cb(fl);});
+  f.addEventListener('change',e=>{if(e.target.files[0])cb(e.target.files[0]);f.value='';});
+}
+setupDrop('zpdf','fpdf','.pdf',readPDF);
+setupDrop('zxls','fxls','.xlsx',readXLS);
+
+async function readPDF(file){
+  showSt('load','Leyendo PDF...');
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    const pg=await pdf.getPage(1);
+    const ct=await pg.getTextContent();
+    const ph=pg.getViewport({scale:1}).height;
+    const items=ct.items.map(i=>({t:i.str.trim(),x:i.transform[4],y:ph-i.transform[5]})).filter(i=>i.t);
+    const lines=groupLines(items,2.5);
+    const d=parsePDF(lines,items);
+    fillForm(d);
+    S.pdfOk=true;
+    document.getElementById('zpdf').classList.add('done');
+    document.getElementById('pfname').textContent='✓ '+file.name;
+    showSt('ok','✅ PDF leído. Verifica los datos y completa las lecturas.');
+    ['p2','p3','p4'].forEach(id=>document.getElementById(id).style.display='block');
+    loadPrev();
+    recalc();
+  }catch(e){showSt('err','⚠ Error: '+e.message);console.error(e);}
+}
+
+async function readXLS(file){
+  try{
+    showSt('load','Leyendo Excel...');
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+    const wsF=wb.Sheets['formato'];
+    const rawF=XLSX.utils.sheet_to_json(wsF,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+    const hF=rawF[0];
+    S.fmt=rawF.slice(1).filter(r=>r[0]).map((r,i)=>{
+      const o={};hF.forEach((h,j)=>o[h]=r[j]||'');
+      return parseFmtRow(o,i);
+    });
+    const wsI=wb.Sheets['individual'];
+    const rawI=XLSX.utils.sheet_to_json(wsI,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+    const hI=rawI[0];
+    S.ind=rawI.slice(1).filter(r=>r[0]).map(r=>{
+      const o={};hI.forEach((h,j)=>o[h]=r[j]||'');
+      return {
+        periodo:fmtPer(o['MES']||''),
+        persona:String(o['ITEM']||'').trim().toUpperCase(),
+        lectura:parseFloat(o['LECTURA'])||0,
+        varLectura:parseFloat(o['VAR. LECTURA'])||0,
+        consumoEnergia:parseFloat(o['CONSUMO ENERGIA(S/.)'])||0,
+        cea:parseFloat(o['C.E.ADICIONAL'])||0,
+        xPagar:parseFloat(o['X PAGAR'])||0,
+        _raw:o
+      };
+    });
+    S.xlsOk=true;
+    document.getElementById('zxls').classList.add('done');
+    document.getElementById('xfname').textContent='✓ '+file.name;
+    if(S.fmt.length){
+      const pr=parseFloat(S.fmt[0].redondeoAnt)||0;
+      si('iredant',(pr*-1).toFixed(2));
+    }
+    loadPrev();
+    recalc();
+    showSt('ok','✅ Excel cargado: '+S.fmt.length+' recibos · '+S.ind.length+' registros.');
+  }catch(e){showSt('err','⚠ Error Excel: '+e.message);console.error(e);}
+}
+
+const ME={1:'ENERO',2:'FEBRERO',3:'MARZO',4:'ABRIL',5:'MAYO',6:'JUNIO',7:'JULIO',8:'AGOSTO',9:'SEPTIEMBRE',10:'OCTUBRE',11:'NOVIEMBRE',12:'DICIEMBRE'};
+const MN={ENERO:'01',FEBRERO:'02',MARZO:'03',ABRIL:'04',MAYO:'05',JUNIO:'06',JULIO:'07',AGOSTO:'08',SEPTIEMBRE:'09',OCTUBRE:'10',NOVIEMBRE:'11',DICIEMBRE:'12'};
+
+function fmtPer(raw){
+  const s=String(raw).trim();
+  if(/^(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)/i.test(s))return s.toUpperCase();
+  const m=s.match(/^(\d{4})-(\d{2})-\d{2}/);
+  if(m)return (ME[parseInt(m[2])]||m[2])+' '+m[1];
+  const n=parseFloat(s);
+  if(!isNaN(n)&&n>10000){const d=XLSX.SSF.parse_date_code(n);if(d)return(ME[d.m]||'')+' '+d.y;}
+  return s;
+}
+function perToISO(p){
+  const m=String(p).toUpperCase().match(/^(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+(\d{4})$/);
+  return m?m[2]+'-'+MN[m[1]]+'-01':new Date().toISOString().substring(0,10);
+}
+function parseFmtRow(o,idx){
+  const f=k=>String(parseFloat(o[k]||0)||0);
+  return{
+    id:1000+idx,periodo:fmtPer(o['MES']),suministro:'0619691',
+    lecActual:String(Math.round(parseFloat(o['LECTURA'])||0)),
+    kwh:String(Math.round(parseFloat(o['VAR. LECTURA'])||0)),
+    precioKwh:String(parseFloat(o['KWh S/.']).toFixed(4)||'0'),
+    reposic:f('REPOSICIÓN Y MANTENIM.'),cargoFijo:f('CARGO FIJO'),
+    energia:f('CARGO ENERGIA'),interes:f('INTERES CONVENIO'),
+    alumbrado:f('ALUMBRADO PUBLICO'),subtotal:f('SUBTOTAL'),
+    igv:f('IGV'),totalMes:f('TOTAL MES ACTUAL'),
+    aporte:f('APORTE DE LEY:'),mora:f('cuota de convenio'),
+    redondeoAnt:f('REDONDEO'),redondeoAct:f('REDONDEO 2'),
+    total:String(parseFloat(o['TOTAL A PAGAR :']).toFixed(2)||'0'),
+    cea:f('C.E.A. INDIVID.'),_raw:o
+  };
+}
+
+// PDF parse
+function groupLines(items,tol){
+  const ls=[];
+  for(const it of items){
+    let found=false;
+    for(const l of ls){if(Math.abs(l.y-it.y)<=tol){l.items.push(it);l.y=(l.y+it.y)/2;found=true;break;}}
+    if(!found)ls.push({y:it.y,items:[it]});
+  }
+  for(const l of ls)l.items.sort((a,b)=>a.x-b.x);
+  return ls.sort((a,b)=>a.y-b.y);
+}
+const tl=l=>l.items.map(i=>i.t).join(' ');
+function valAt(lines,rx,xMin){
+  xMin=xMin||370;
+  for(const l of lines){
+    if(rx.test(tl(l))){
+      const ns=l.items.filter(i=>i.x>=xMin&&/^-?\d+[.,]\d{2}$/.test(i.t.replace(',','.')));
+      if(ns.length)return ns[ns.length-1].t.replace(',','.');
+      const ni=l.items.filter(i=>i.x>=xMin&&/^-?\d+\.?\d*$/.test(i.t));
+      if(ni.length)return ni[ni.length-1].t;
+    }
+  }
+  return '';
+}
+function parsePDF(lines,all){
+  const d={};
+  for(const l of lines){if(l.y<15){const m=tl(l).match(/(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+(20\d{2})/i);if(m){d.periodo=m[1].toUpperCase()+' '+m[2];break;}}}
+  d.periodo=d.periodo||'';
+  for(const l of lines){if(l.y>20&&l.y<40){const ns=l.items.filter(i=>i.x>330&&/^\d{6,8}$/.test(i.t));if(ns.length){d.sumin=ns[0].t;break;}}}
+  for(const l of lines){const t=tl(l);const m=t.match(/Recibo:([A-Z0-9\-]+)/i)||t.match(/Recibo[\s:]+([A-Z0-9\-]+)/i);if(m){d.recibo=m[1];break;}}
+  for(const l of lines){const t=tl(l);if(/D\.N\.I\./i.test(t)){const idx=lines.indexOf(l);for(let i=Math.max(0,idx-3);i<=Math.min(lines.length-1,idx+1);i++){const lt=tl(lines[i]);const nm=lt.match(/^([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{3,}){1,3})\s*$/);if(nm){d.titular=nm[1].trim();break;}}break;}}
+  if(!d.titular){for(const l of lines){if(l.y>45&&l.y<60){const ns=l.items.filter(i=>i.x>340&&/^[A-ZÁÉÍÓÚÑ]{3,}$/.test(i.t));if(ns.length>=2){d.titular=ns.map(n=>n.t).join(' ');break;}}}}
+  const getD=s=>{const m=s.match(/(\d{1,2}[\/\-]\w{3}[\/\-]\d{4}|\d{2}\/\d{2}\/\d{4})/);return m?m[1]:''};
+  for(const l of lines){const t=tl(l);if(/EMISI[ÓO]N/i.test(t)){d.emision=getD(t);break;}}
+  for(const l of lines){const t=tl(l);if(/VENCIMIENTO/i.test(t)){d.vence=getD(t);break;}}
+  for(const l of lines){if(/Lectura\s+Actual/i.test(tl(l))){const ns=l.items.filter(i=>i.x>=230&&/^\d{5,6}$/.test(i.t));if(ns.length)d.lecact=ns[0].t;break;}}
+  for(const l of lines){if(/Lectura\s+Anterior/i.test(tl(l))){const ns=l.items.filter(i=>i.x>=230&&/^\d{5,6}$/.test(i.t));if(ns.length)d.lecant=ns[0].t;break;}}
+  for(const l of lines){const t=tl(l);const m=t.match(/Consumo[^0-9]*(\d+)/i)||t.match(/(\d+)kWh/i);if(m&&!t.includes('S/')){d.kwh=m[1];break;}}
+  for(const l of lines){const t=tl(l);const m=t.match(/S\/\s*(0\.\d{4})/);if(m){d.precio=m[1];break;}}
+  d.repos=valAt(lines,/Reposic/i);
+  d.cfijo=valAt(lines,/Cargo\s+Fijo/i);
+  d.ener=valAt(lines,/Cargo\s+por\s+Energ/i);
+  d.interes=valAt(lines,/Inter.s\s+Compensatorio/i);
+  d.alumb=valAt(lines,/Alumbrado\s+P/i);
+  d.sub=valAt(lines,/SUBTOTAL\s+Mes/i);
+  d.igv=valAt(lines,/I\.G\.V\./i);
+  d.tmesact=valAt(lines,/TOTAL\s+Mes\s+Actual/i);
+  d.aporte=valAt(lines,/Aporte\s+Ley/i);
+  d.mora=valAt(lines,/Recargo\s+por\s+Mora/i);
+  d.redact=valAt(lines,/Redondeo\s+Mes\s+Actual/i);
+  d.redant=valAt(lines,/Redondeo\s+Mes\s+Anterior/i);
+  for(const l of lines){const t=tl(l);const m=t.match(/\*{3,}([\d,]+\.?\d{0,2})/);if(m){d.total=m[1].replace(',','');break;}}
+  if(!d.total){for(const it of all){const m=it.t.match(/\*+(\d+\.?\d{0,2})/);if(m){d.total=m[1];break;}}}
+  return d;
+}
+
+const si=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||''};
+const gi=id=>(document.getElementById(id)?.value||'').trim();
+const gn=id=>parseFloat(gi(id).replace(/[^\d.\-]/g,''))||0;
+
+function fillForm(d){
+  document.getElementById('itotal').value=d.total?'S/ '+d.total:'';
+  si('iperiodo',d.periodo);si('isumin',d.sumin||'0619691');si('irecibo',d.recibo||'');
+  si('ititular',d.titular||'CAROCANCHA JULIO');si('iemision',d.emision||'');si('ivence',d.vence||'');
+  si('ilecact',d.lecact||'');si('ilecant',d.lecant||'');
+  // kWh total = lectura actual - lectura anterior (computed, not from PDF text)
+  const _la=parseFloat(d.lecact)||0, _lant=parseFloat(d.lecant)||0;
+  const _kwh=(_la>0&&_lant>0&&_la>_lant)?(_la-_lant):(parseFloat(d.kwh)||0);
+  si('ikwh',_kwh?(_kwh+' kWh'):'');
+  si('iprecio',d.precio||'');
+  si('irepos',d.repos||'');si('icfijo',d.cfijo||'');si('iener',d.ener||'');
+  si('iinteres',d.interes||'');si('ialumb',d.alumb||'');si('isub',d.sub||'');
+  si('iigv',d.igv||'');si('iaporte',d.aporte||'');
+  si('imora',d.mora||'');si('iredact',d.redact||'');
+  // Total Mes Actual = Subtotal + IGV (automático)
+  const sub=parseFloat(d.sub)||0, igv=parseFloat(d.igv)||0;
+  si('itmesact',(sub+igv).toFixed(2));
+  // Redondeo anterior del Excel histórico
+  if(S.fmt.length){const pr=parseFloat(S.fmt[0].redondeoAnt)||0;si('iredant',(pr*-1).toFixed(2));}
+  else{si('iredant',d.redant||'');}
+}
+
+// Auto-recalc Total Mes Actual cuando cambia subtotal o IGV
+document.getElementById('isub').addEventListener('input',()=>{
+  const sub=gn('isub'),igv=gn('iigv');
+  si('itmesact',(sub+igv).toFixed(2));
+  recalc();
+});
+document.getElementById('iigv').addEventListener('input',()=>{
+  const sub=gn('isub'),igv=gn('iigv');
+  si('itmesact',(sub+igv).toFixed(2));
+  recalc();
+});
+
+function loadPrev(){
+  const byP={};
+  for(const r of S.ind){if(!byP[r.persona])byP[r.persona]=r;}
+  ['ANDY','WILMER','NOEMI'].forEach(p=>{
+    const r=byP[p];
+    document.getElementById('ant-'+p).textContent=r?r.lectura:'—';
+  });
+}
+
+document.getElementById('itotal').addEventListener('input',recalc);
+
+// ─── NUEVA FÓRMULA ───
+// CE_x = kWh_x * precio
+// IGV_x = IGV_real * (CE_x / CE_total)   ← proporcional al consumo
+// cargos_fijos = repos + cfijo + interes + alumb + aporte + mora + redact + redondeo2
+// CEA = cargos_fijos / 3
+// base_x = CE_x + IGV_x + CEA
+// andy_paga  = base_andy / 3
+// wilmer_paga = base_wilmer + andy_paga
+// noemi_paga  = base_noemi  + andy_paga
+// Ajuste centavos distribuido al mayor primero para que suma = total_a_pagar exacto
+
+function recalc(){
+  const total=gn('itotal');
+  const precio=gn('iprecio');
+  // totalKwh: parse from field, fallback to lecActual - lecAnterior
+  let totalKwh=parseFloat(gi('ikwh').replace(/[^\d.]/g,''))||0;
+  if(!totalKwh){
+    const la=parseFloat(gi('ilecact').replace(/[^\d.]/g,''))||0;
+    const lant=parseFloat(gi('ilecant').replace(/[^\d.]/g,''))||0;
+    if(la>lant) totalKwh=la-lant;
+  }
+  // Recalcular Total Mes Actual = Subtotal + IGV
+  const sub=gn('isub'),igv=gn('iigv');
+  if(sub>0&&igv>0)si('itmesact',(sub+igv).toFixed(2));
+  if(!total||!precio)return;
+  const wAct=gn('act-WILMER');
+  const nAct=gn('act-NOEMI');
+  if(!wAct||!nAct)return;
+  // Lecturas anteriores
+  const byP={};for(const r of S.ind){if(!byP[r.persona])byP[r.persona]=r;}
+  const aAnt=byP['ANDY']?.lectura||0;
+  const wAnt=byP['WILMER']?.lectura||0;
+  const nAnt=byP['NOEMI']?.lectura||0;
+  // kWh por persona
+  // kWh por persona
+  // Wilmer y Noemi: variación de sus sub-medidores individuales
+  const wVar=Math.max(0,wAct-wAnt);
+  const nVar=Math.max(0,nAct-nAnt);
+  // Andy: lectura acumulada = medidor global actual - Wilmer actual - Noemi actual
+  //       kWh Andy = lectura acumulada Andy - lectura anterior Andy
+  const lecGlobal=parseFloat(gi('ilecact').replace(/[^\d.]/g,''))||0;
+  const aActLec=lecGlobal>0 ? lecGlobal-wAct-nAct : 0;
+  const aVar=Math.max(0,aActLec-aAnt);
+  // Warning si la lectura global no cuadra
+  const warnEl=document.getElementById('andy-warn');
+  if(warnEl){
+    if(lecGlobal>0 && aActLec<aAnt){
+      warnEl.textContent='⚠ Lectura Andy ('+aActLec+') < anterior ('+aAnt+'). Verifica las lecturas de Wilmer/Noemi o la lectura global.';
+      warnEl.style.display='block';
+    } else {
+      warnEl.style.display='none';
+    }
+  }
+  // CE por persona
+  const aCE=Math.round(aVar*precio*10000)/10000;
+  const wCE=Math.round(wVar*precio*10000)/10000;
+  const nCE=Math.round(nVar*precio*10000)/10000;
+  const CE_total=aCE+wCE+nCE;
+  // IGV proporcional al consumo
+  const igv_real=gn('iigv');
+  const aIGV=CE_total>0?Math.round(igv_real*aCE/CE_total*10000)/10000:0;
+  const wIGV=CE_total>0?Math.round(igv_real*wCE/CE_total*10000)/10000:0;
+  const nIGV=CE_total>0?Math.round(igv_real*nCE/CE_total*10000)/10000:0;
+  // Cargos fijos sin IGV / 3
+  const red2=gn('iredant');
+  const cargos_fijos=gn('irepos')+gn('icfijo')+gn('iinteres')+gn('ialumb')+gn('iaporte')+gn('imora')+gn('iredact')+red2;
+  const cea=cargos_fijos/3;
+  // Base por persona
+  const base_a=aCE+aIGV+cea;
+  const base_w=wCE+wIGV+cea;
+  const base_n=nCE+nIGV+cea;
+  // Pagos sin redondear
+  const andy_raw=base_a/3;
+  const wilmer_raw=base_w+andy_raw;
+  const noemi_raw=base_n+andy_raw;
+  // Redondear a 2 decimales
+  let andyP=Math.round(andy_raw*100)/100;
+  let wilmerP=Math.round(wilmer_raw*100)/100;
+  let noemiP=Math.round(noemi_raw*100)/100;
+  // Ajuste de centavos para cierre exacto
+  const diff_cents=Math.round((total-andyP-wilmerP-noemiP)*100);
+  if(diff_cents!==0){
+    // Ordenar por pago bruto descendente → ajustar al mayor primero
+    const ord=[{n:'ANDY',raw:andy_raw},{n:'WILMER',raw:wilmer_raw},{n:'NOEMI',raw:noemi_raw}]
+      .sort((a,b)=>b.raw-a.raw);
+    const step=diff_cents>0?0.01:-0.01;
+    const pagos={ANDY:andyP,WILMER:wilmerP,NOEMI:noemiP};
+    for(let i=0;i<Math.abs(diff_cents);i++){
+      const nombre=ord[i%3].n;
+      pagos[nombre]=Math.round((pagos[nombre]+step)*100)/100;
+    }
+    andyP=pagos.ANDY;wilmerP=pagos.WILMER;noemiP=pagos.NOEMI;
+  }
+  // Actualizar UI
+  document.getElementById('pago-ANDY').textContent='S/ '+andyP.toFixed(2);
+  document.getElementById('pago-WILMER').textContent='S/ '+wilmerP.toFixed(2);
+  document.getElementById('pago-NOEMI').textContent='S/ '+noemiP.toFixed(2);
+  si('act-ANDY',Math.round(aActLec));
+  document.getElementById('kwh-ANDY').innerHTML='<span>'+aVar+' kWh</span> · IGV: S/'+aIGV.toFixed(2);
+  document.getElementById('kwh-WILMER').innerHTML='<span>'+wVar+' kWh</span> · IGV: S/'+wIGV.toFixed(2);
+  document.getElementById('kwh-NOEMI').innerHTML='<span>'+nVar+' kWh</span> · IGV: S/'+nIGV.toFixed(2);
+  // Badge de verificación suma
+  const sumaFinal=Math.round((andyP+wilmerP+noemiP)*100)/100;
+  const badge=document.getElementById('suma-badge');
+  const ok=Math.abs(sumaFinal-total)<0.005;
+  badge.style.display='flex';
+  badge.className='suma-check '+(ok?'suma-ok':'suma-err');
+  badge.textContent=(ok?'✓ Suma verificada: ':'⚠ Diferencia: ')+'S/ '+sumaFinal.toFixed(2)+' = Total S/ '+total.toFixed(2);
+  S.calc={cea,cargos_fijos,andyP,wilmerP,noemiP,
+    ANDY:{kwh:aVar,ce:aCE,igv:aIGV,lectura:Math.round(aActLec),lecAnt:aAnt},
+    WILMER:{kwh:wVar,ce:wCE,igv:wIGV,lectura:wAct,lecAnt:wAnt},
+    NOEMI:{kwh:nVar,ce:nCE,igv:nIGV,lectura:nAct,lecAnt:nAnt}};
+  // Refresh Por Persona tab if it's open (after S.calc is updated)
+  if(document.getElementById('tab-per').classList.contains('on')) renderPer();
+}
+
+// Por Persona
+const PCOLOR={ANDY:'var(--y)',WILMER:'var(--bl)',NOEMI:'var(--pu)'};
+const PCLS={ANDY:'andy',WILMER:'wilmer',NOEMI:'noemi'};
+
+function getMesAnterior(allRegs, periodoActual){
+  const m=periodoActual.toUpperCase().match(/^(\w+)\s+(\d{4})$/);
+  if(!m) return null;
+  const mes=m[1], anio=parseInt(m[2]);
+  return allRegs.find(r=>{
+    const m2=r.periodo.toUpperCase().match(/^(\w+)\s+(\d{4})$/);
+    return m2 && m2[1]===mes && parseInt(m2[2])===anio-1;
+  })||null;
+}
+
+function renderPer(){
+  const cont=document.getElementById('per-cont');
+  const empty=document.getElementById('per-empty');
+  const hasCalc=S.calc && S.pdfOk;
+  const periodoActual=hasCalc?(document.getElementById('iperiodo')?.value||''):'';
+  if(!S.ind.length && !hasCalc){cont.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  document.getElementById('per-badge').textContent='3 personas'+(hasCalc?' · '+periodoActual:'')+' · '+S.ind.length+' registros históricos';
+
+  let html='<div class="mgrid">';
+  ['ANDY','WILMER','NOEMI'].forEach(p=>{
+    const histRegs=S.ind.filter(i=>i.persona===p);
+    let allRegs=[...histRegs];
+
+    if(hasCalc){
+      const c=S.calc;
+      const pdata=c[p]; // {kwh, ce, igv, lectura, lecAnt}
+      const xPagar=p==='ANDY'?c.andyP:p==='WILMER'?c.wilmerP:c.noemiP;
+      const currentReg={
+        periodo:periodoActual,
+        varLectura:pdata.kwh,   // kWh consumido este mes
+        xPagar:xPagar,
+        cea:Math.round(c.cea*100)/100,
+        consumoEnergia:pdata.ce,
+        lectura:pdata.lectura,
+        isCurrent:true
+      };
+      // Replace first historical if same period, else prepend
+      if(allRegs.length && allRegs[0].periodo.toUpperCase()===periodoActual.toUpperCase()){
+        allRegs[0]=currentReg;
+      } else {
+        allRegs=[currentReg,...histRegs];
+      }
+    }
+
+    if(!allRegs.length) return;
+    const act=allRegs[0];
+    const prev=allRegs[1]||null;
+    const sameMonthLY=getMesAnterior(allRegs.slice(1), act.periodo); // search in historical only
+    const color=PCOLOR[p], cls=PCLS[p];
+
+    // Stats (always from historical, not current)
+    const statBase=hasCalc?allRegs.slice(1):allRegs.slice(1);
+    const avg6=statBase.slice(0,6).reduce((a,r)=>a+r.xPagar,0)/Math.max(1,Math.min(6,statBase.length));
+    const last12=statBase.slice(0,12);
+    const max12=last12.reduce((a,r)=>Math.max(a,r.xPagar),0);
+    const min12=last12.reduce((a,r)=>Math.min(a,r.xPagar),Infinity);
+    const max12Per=last12.find(r=>r.xPagar===max12)?.periodo||'';
+    const min12Per=last12.find(r=>r.xPagar===min12)?.periodo||'';
+
+    // ── Delta vs mes anterior ──
+    let deltaHtml='';
+    if(prev){
+      const diff=act.xPagar-prev.xPagar;
+      const pct=Math.abs(diff/(prev.xPagar||1)*100).toFixed(1);
+      const sign=diff>=0?'+':'−';
+      const dcls=diff>0.5?'d-up':diff<-0.5?'d-dn':'d-eq';
+      const arrow=diff>0.5?'▲':diff<-0.5?'▼':'=';
+      deltaHtml+='<div class="delta '+dcls+'">'+arrow+' '+sign+'S/ '+Math.abs(diff).toFixed(2)+' ('+pct+'%) vs '+prev.periodo+'</div>';
+    }
+
+    // ── Delta vs mismo mes año pasado ──
+    if(sameMonthLY){
+      const diff2=act.xPagar-sameMonthLY.xPagar;
+      const pct2=Math.abs(diff2/(sameMonthLY.xPagar||1)*100).toFixed(1);
+      const sign2=diff2>=0?'+':'−';
+      const dcls2=diff2>0.5?'d-up':diff2<-0.5?'d-dn':'d-eq';
+      const arrow2=diff2>0.5?'▲':diff2<-0.5?'▼':'=';
+      deltaHtml+='<div class="delta '+dcls2+'" style="opacity:.8">'+arrow2+' '+sign2+'S/ '+Math.abs(diff2).toFixed(2)+' ('+pct2+'%) vs '+sameMonthLY.periodo+'</div>';
+    }
+
+    // ── ΔCEA vs mes anterior (variación que le corresponde a cada persona) ──
+    // Andy paga CEA×1/3 · Wilmer/Noemi pagan CEA×4/3 (su parte + parte Andy)
+    if(hasCalc && prev && prev.cea!==undefined){
+      const deltaCEA=act.cea-prev.cea;
+      if(Math.abs(deltaCEA)>=0.01){
+        const factor=(p==='ANDY')?1/3:4/3;
+        const deltaCEAPersona=deltaCEA*factor;
+        const ceaArrow=deltaCEAPersona>0?'▲':'▼';
+        const ceaSign=deltaCEAPersona>0?'+':'−';
+        const ceaColor=deltaCEAPersona>0?'var(--rd)':'var(--gr)';
+        deltaHtml+='<div class="delta-cea" style="color:'+ceaColor+'">'+ceaArrow+' CEA '+ceaSign+'S/ '+Math.abs(deltaCEAPersona).toFixed(2)+'</div>';
+      }
+    }
+
+    // ── Mini table ──
+    let rows='';
+    allRegs.slice(0,6).forEach(r=>{
+      const isCur=r.isCurrent;
+      rows+='<tr'+(isCur?' class="cur-row"':'')+'>'
+        +'<td>'+(isCur?'<span class="cur-dot">●</span> ':'')+r.periodo+'</td>'
+        +'<td style="color:var(--gr)">'+r.varLectura+'</td>'
+        +'<td style="color:'+color+';font-weight:700">S/ '+r.xPagar.toFixed(2)+'</td>'
+        +'</tr>';
+    });
+
+    html+='<div class="mc '+cls+'">';
+    html+='<div class="mc-name">'+p+'</div>';
+    html+='<div class="mc-pago">S/ '+act.xPagar.toFixed(2)+'</div>';
+    html+='<div class="mc-per">'+act.periodo+' · '+act.varLectura+' kWh</div>';
+    html+=deltaHtml;
+    html+='<div class="ms">';
+    html+='<div class="ms-item"><div class="ms-l">Prom. 6m</div><div class="ms-v">S/ '+avg6.toFixed(2)+'</div></div>';
+    html+='<div class="ms-item tt-wrap"><div class="ms-l">Máx. 12m</div><div class="ms-v" style="color:var(--rd)">S/ '+max12.toFixed(2)+'<span class="tt">'+max12Per+'</span></div></div>';
+    html+='<div class="ms-item tt-wrap"><div class="ms-l">Mín. 12m</div><div class="ms-v" style="color:var(--gr)">S/ '+(min12===Infinity?'—':min12.toFixed(2))+'<span class="tt">'+(min12===Infinity?'':min12Per)+'</span></div></div>';
+    html+='</div>';
+    html+='<table class="mini-t"><thead><tr><th>Período</th><th>kWh</th><th>Pago</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    html+='</div>';
+  });
+  html+='</div>';
+  cont.innerHTML=html;
+}
+
+function renderHist(){
+  const tbody=document.getElementById('hist-body');
+  const empty=document.getElementById('hist-empty');
+  document.getElementById('hist-badge').textContent=S.fmt.length+' recibos';
+  if(!S.fmt.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const m=v=>(v&&v!=='0'&&v!='0.0')?'S/ '+v:'—';
+  let rows='';
+  S.fmt.forEach(r=>{rows+='<tr><td><b>'+r.periodo+'</b></td><td class="ckwh">'+r.kwh+'</td><td class="cdim">'+r.precioKwh+'</td><td>'+m(r.reposic)+'</td><td>'+m(r.cargoFijo)+'</td><td>'+m(r.energia)+'</td><td>'+m(r.interes)+'</td><td>'+m(r.alumbrado)+'</td><td>'+m(r.subtotal)+'</td><td>'+m(r.igv)+'</td><td>'+m(r.totalMes)+'</td><td>'+m(r.aporte)+'</td><td>'+m(r.mora)+'</td><td>'+m(r.redondeoAnt)+'</td><td>'+m(r.redondeoAct)+'</td><td class="ctotal">S/ '+r.total+'</td></tr>';});
+  tbody.innerHTML=rows;
+}
+
+const FH=['MES','KWh S/.','LECTURA','VAR. LECTURA','REPOSICIÓN Y MANTENIM.','CARGO FIJO','CARGO ENERGIA','INTERES CONVENIO','ALUMBRADO PUBLICO','SUBTOTAL','IGV','TOTAL MES ACTUAL','APORTE DE LEY:','OTROS','cuota de convenio','REDONDEO','REDONDEO 2','TOTAL A PAGAR :','CONSUMO DE ENERGIA ADICIONAL','C.E.A. INDIVID.','COR-Fus. o interr (s/r)','REP-Fus. o interrup(s/r)','Cambio precios 2017-2020','I.G.V. 18% Refact.'];
+const IH=['MES','ITEM','LECTURA','VAR. LECTURA','CONSUMO ENERGIA(S/.)','C.E.ADICIONAL','X PAGAR'];
+
+function doDownload(){
+  if(!S.pdfOk||!S.calc){alert('Completa el PDF y las lecturas individuales primero.');return;}
+  const c=S.calc,fecha=perToISO(gi('iperiodo'));
+  const prevRed=S.fmt.length?(parseFloat(S.fmt[0].redondeoAnt)||0):0;
+  const newFmt={
+    'MES':fecha,'KWh S/.':parseFloat(gi('iprecio'))||0,
+    'LECTURA':parseInt(gi('ilecact').replace(/\D/g,''))||0,
+    'VAR. LECTURA':parseInt(gi('ikwh').replace(/\D/g,''))||0,
+    'REPOSICIÓN Y MANTENIM.':gn('irepos'),'CARGO FIJO':gn('icfijo'),
+    'CARGO ENERGIA':gn('iener'),'INTERES CONVENIO':gn('iinteres'),
+    'ALUMBRADO PUBLICO':gn('ialumb'),'SUBTOTAL':gn('isub'),
+    'IGV':gn('iigv'),'TOTAL MES ACTUAL':gn('itmesact'),
+    'APORTE DE LEY:':gn('iaporte'),'OTROS':0,'cuota de convenio':gn('imora'),
+    'REDONDEO':gn('iredact'),'REDONDEO 2':parseFloat((prevRed*-1).toFixed(2)),
+    'TOTAL A PAGAR :':gn('itotal'),
+    'CONSUMO DE ENERGIA ADICIONAL':Math.round(c.cargos_fijos*100)/100,
+    'C.E.A. INDIVID.':Math.round(c.cea*100)/100,
+    'COR-Fus. o interr (s/r)':0,'REP-Fus. o interrup(s/r)':0,
+    'Cambio precios 2017-2020':0,'I.G.V. 18% Refact.':0
+  };
+  const newIndi=[
+    {'MES':fecha,'ITEM':'ANDY','LECTURA':c.ANDY.lectura,'VAR. LECTURA':c.ANDY.kwh,'CONSUMO ENERGIA(S/.)':c.ANDY.ce,'C.E.ADICIONAL':Math.round(c.cea*100)/100,'X PAGAR':c.andyP},
+    {'MES':fecha,'ITEM':'WILMER','LECTURA':c.WILMER.lectura,'VAR. LECTURA':c.WILMER.kwh,'CONSUMO ENERGIA(S/.)':c.WILMER.ce,'C.E.ADICIONAL':Math.round(c.cea*100)/100,'X PAGAR':c.wilmerP},
+    {'MES':fecha,'ITEM':'NOEMI','LECTURA':c.NOEMI.lectura,'VAR. LECTURA':c.NOEMI.kwh,'CONSUMO ENERGIA(S/.)':c.NOEMI.ce,'C.E.ADICIONAL':Math.round(c.cea*100)/100,'X PAGAR':c.noemiP}
+  ];
+  const allFmt=[newFmt,...S.fmt.map(r=>r._raw?buildRawFmt(r._raw):buildFmt(r))];
+  const allIndi=[...newIndi,...S.ind.map(r=>r._raw?buildRawIndi(r._raw):buildIndi(r))];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(allFmt,{header:FH}),'formato');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(allIndi,{header:IH}),'individual');
+  XLSX.writeFile(wb,'REG_'+fecha.replace(/-/g,'').substring(0,8)+'.xlsx');
+}
+function buildRawFmt(raw){const r={};FH.forEach(h=>r[h]=raw[h]!==undefined?raw[h]:'');return r;}
+function buildFmt(r){return{'MES':perToISO(r.periodo),'KWh S/.':r.precioKwh,'LECTURA':r.lecActual,'VAR. LECTURA':r.kwh,'REPOSICIÓN Y MANTENIM.':r.reposic,'CARGO FIJO':r.cargoFijo,'CARGO ENERGIA':r.energia,'INTERES CONVENIO':r.interes,'ALUMBRADO PUBLICO':r.alumbrado,'SUBTOTAL':r.subtotal,'IGV':r.igv,'TOTAL MES ACTUAL':r.totalMes,'APORTE DE LEY:':r.aporte,'OTROS':0,'cuota de convenio':r.mora,'REDONDEO':r.redondeoAnt,'REDONDEO 2':r.redondeoAct,'TOTAL A PAGAR :':r.total,'CONSUMO DE ENERGIA ADICIONAL':r.cea?(parseFloat(r.cea)*3).toFixed(2):0,'C.E.A. INDIVID.':r.cea||0,'COR-Fus. o interr (s/r)':0,'REP-Fus. o interrup(s/r)':0,'Cambio precios 2017-2020':0,'I.G.V. 18% Refact.':0};}
+function buildRawIndi(raw){return{'MES':raw['MES']||'','ITEM':raw['ITEM']||'','LECTURA':raw['LECTURA']||0,'VAR. LECTURA':raw['VAR. LECTURA']||0,'CONSUMO ENERGIA(S/.)':raw['CONSUMO ENERGIA(S/.)']||0,'C.E.ADICIONAL':raw['C.E.ADICIONAL']||0,'X PAGAR':raw['X PAGAR']||0};}
+function buildIndi(r){return{'MES':perToISO(r.periodo),'ITEM':r.persona,'LECTURA':r.lectura,'VAR. LECTURA':r.varLectura,'CONSUMO ENERGIA(S/.)':r.consumoEnergia,'C.E.ADICIONAL':r.cea,'X PAGAR':r.xPagar};}
+
+function showSt(type,msg){
+  const s=document.getElementById('st');
+  s.className=type;s.innerHTML=type==='load'?'<div class="spin"></div> '+msg:msg;
+  s.style.display='flex';
+  if(type!=='load')setTimeout(()=>s.style.display='none',6000);
+}
+function reiniciar(){
+  S.pdfOk=false;S.calc=null;
+  ['p2','p3','p4'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('zpdf').classList.remove('done');
+  document.getElementById('pfname').textContent='';
+  document.getElementById('st').style.display='none';
+  document.getElementById('suma-badge').style.display='none';
+  si('act-WILMER','');si('act-NOEMI','');si('act-ANDY','');
+  ['ANDY','WILMER','NOEMI'].forEach(p=>{document.getElementById('pago-'+p).textContent='—';document.getElementById('kwh-'+p).textContent='';});
+}
+</script>
+</body>
+</html>
